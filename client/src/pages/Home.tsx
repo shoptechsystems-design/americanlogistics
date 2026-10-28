@@ -51,7 +51,7 @@ const steps = [
 ];
 
 const testimonials = [
-  { quote: "Dispatch 5 gives me the kind of communication I wish I had from every broker. I know what is happening before I have to ask.", name: "Marcus T.", meta: "Dry van carrier · Texas" },
+  { quote: "American Logistics gives me the kind of communication I wish I had from every broker. I know what is happening before I have to ask.", name: "Marcus T.", meta: "Dry van carrier · Texas" },
   { quote: "They learned how I like to run instead of sending random loads. My week feels more intentional and a lot less stressful.", name: "Jasmine R.", meta: "Box truck owner · Georgia" },
   { quote: "The biggest difference is that someone actually picks up. When a load shifts, I am not left figuring it out alone.", name: "Derrick W.", meta: "Hotshot operator · Oklahoma" },
 ];
@@ -71,15 +71,15 @@ const equipmentProfiles = [
 
 function BrandMark() {
   return (
-    <a className="brand" href="#top" aria-label="Dispatch 5 Services home">
+    <a className="brand" href="#top" aria-label="American Logistics home">
       <span className="brand-mark" aria-hidden="true">
         <span className="brand-route" />
         <span className="brand-dot brand-dot-one" />
         <span className="brand-dot brand-dot-two" />
       </span>
       <span className="brand-copy">
-        <strong>DISPATCH<span>5</span></strong>
-        <small>SERVICES</small>
+        <strong>AMERICAN <span>LOGISTICS</span></strong>
+        <small>FREIGHT DISPATCH</small>
       </span>
     </a>
   );
@@ -180,9 +180,9 @@ function LoadToLaunch() {
         <div className="journey-route-line" />
         <div className="journey-road-sign journey-road-sign-one" aria-hidden="true"><b>ATLANTA</b><span>I-20 E</span></div>
         <div className="journey-road-sign journey-road-sign-two" aria-hidden="true"><b>EXIT 18</b><span>REST AREA</span></div>
-        <div className="journey-distant-truck" aria-hidden="true"><span /><b>D5</b><i /><i /></div>
-        <div className="journey-background-truck" aria-hidden="true"><span className="background-truck-cab" /><span className="background-truck-trailer"><b>D5</b></span><i className="background-wheel-one" /><i className="background-wheel-two" /><em className="background-taillight-one" /><em className="background-taillight-two" /></div>
-        <div className="journey-truck"><div className="journey-cab"><span /><i className="journey-headlight journey-headlight-one" /><i className="journey-headlight journey-headlight-two" /></div><div className="journey-trailer"><b>D5</b><div className="cargo cargo-one" /><div className="cargo cargo-two" /><div className="cargo cargo-three" /></div><i className="journey-wheel journey-wheel-one" /><i className="journey-wheel journey-wheel-two" /><i className="journey-wheel journey-wheel-three" /><em className="journey-taillight journey-taillight-one" /><em className="journey-taillight journey-taillight-two" /></div>
+        <div className="journey-distant-truck" aria-hidden="true"><span /><b>AL</b><i /><i /></div>
+        <div className="journey-background-truck" aria-hidden="true"><span className="background-truck-cab" /><span className="background-truck-trailer"><b>AL</b></span><i className="background-wheel-one" /><i className="background-wheel-two" /><em className="background-taillight-one" /><em className="background-taillight-two" /></div>
+        <div className="journey-truck"><div className="journey-cab"><span /><i className="journey-headlight journey-headlight-one" /><i className="journey-headlight journey-headlight-two" /></div><div className="journey-trailer"><b>AL</b><div className="cargo cargo-one" /><div className="cargo cargo-two" /><div className="cargo cargo-three" /></div><i className="journey-wheel journey-wheel-one" /><i className="journey-wheel journey-wheel-two" /><i className="journey-wheel journey-wheel-three" /><em className="journey-taillight journey-taillight-one" /><em className="journey-taillight journey-taillight-two" /></div>
         <div className="journey-status"><small>{journeyStep === 0 ? "LOAD ACCEPTED" : journeyStep === 1 ? "CARGO SECURED" : "IN TRANSIT"}</small><strong>{journeyStep === 0 ? "Finding the right fit" : journeyStep === 1 ? "Ready to roll" : "Moving toward Atlanta"}</strong></div>
         <div className="journey-node journey-node-start">DALLAS</div><div className="journey-node journey-node-end">ATLANTA</div>
       </div>
@@ -376,7 +376,7 @@ function NightRun() {
         <div className="night-moon" /><div className="night-city"><i /><i /><i /><i /><i /><i /><i /><i /></div>
         <div className="night-lamp night-lamp-one"><i /></div><div className="night-lamp night-lamp-two"><i /></div><div className="night-lamp night-lamp-three"><i /></div>
         <div className="night-road"><span /><span /><span /><span /><span /><span /></div>
-        <div className="night-truck"><div className="night-truck-cab"><i className="night-beam beam-one" /><i className="night-beam beam-two" /><b className="night-lamp-glow" /></div><div className="night-truck-box"><b>D5</b><span /></div><i className="night-wheel one" /><i className="night-wheel two" /><i className="night-redlight" /></div>
+        <div className="night-truck"><div className="night-truck-cab"><i className="night-beam beam-one" /><i className="night-beam beam-two" /><b className="night-lamp-glow" /></div><div className="night-truck-box"><b>AL</b><span /></div><i className="night-wheel one" /><i className="night-wheel two" /><i className="night-redlight" /></div>
         <div className="night-mile-marker"><small>TX 20</small><b>WEST</b></div>
         <div className="night-run-caption"><span className="live-dot" /> LIVE ROAD VIEW <b>{String(Math.round(runProgress * 100)).padStart(2, "0")}%</b></div>
       </div>
@@ -449,7 +449,7 @@ function Home() {
           <nav className="desktop-nav" aria-label="Primary navigation">
             <a className={activeSection === "services" ? "nav-active" : ""} href="#services">What we dispatch</a>
             <a className={activeSection === "journey" ? "nav-active" : ""} href="#journey">Load journey</a>
-            <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage">Why Dispatch 5</a>
+            <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage">Why us</a>
             <a className={activeSection === "process" ? "nav-active" : ""} href="#process">How it works</a>
             <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews">Carrier reviews</a>
           </nav>
@@ -464,7 +464,7 @@ function Home() {
         <div className="mobile-nav" aria-hidden={!mobileOpen}>
           <a className={activeSection === "services" ? "nav-active" : ""} href="#services" onClick={closeMenu}>What we dispatch <ArrowRight size={16} /></a>
           <a className={activeSection === "journey" ? "nav-active" : ""} href="#journey" onClick={closeMenu}>Load journey <ArrowRight size={16} /></a>
-          <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage" onClick={closeMenu}>Why Dispatch 5 <ArrowRight size={16} /></a>
+          <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage" onClick={closeMenu}>Why us <ArrowRight size={16} /></a>
           <a className={activeSection === "process" ? "nav-active" : ""} href="#process" onClick={closeMenu}>How it works <ArrowRight size={16} /></a>
           <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews" onClick={closeMenu}>Carrier reviews <ArrowRight size={16} /></a>
           <a className="button button-amber" href="#contact" onClick={closeMenu}>Talk to a dispatcher <ArrowUpRight size={16} /></a>
@@ -514,7 +514,7 @@ function Home() {
               <div className="truck-visual">
                 <div className="truck-cab"><span className="truck-window" /><span className="truck-grille" /><span className="truck-headlight" /></div>
                 <div className="truck-hood" />
-                <div className="truck-trailer"><span className="trailer-stripe" /><span className="trailer-label">D5</span><span className="trailer-door" /></div>
+                <div className="truck-trailer"><span className="trailer-stripe" /><span className="trailer-label">AL</span><span className="trailer-door" /></div>
                 <div className="truck-wheel wheel-front" /><div className="truck-wheel wheel-mid" /><div className="truck-wheel wheel-back" />
               </div>
               <div className="visual-card visual-card-top"><span className="card-pulse"><Zap size={13} /></span><div><small>LOAD MATCH</small><strong>98.6%</strong></div></div>
@@ -557,7 +557,7 @@ function Home() {
           <div className="advantage-grid-texture" />
           <div className="container">
             <ScrollReveal className="section-heading split-heading light-heading">
-              <div><div className="eyebrow"><span className="eyebrow-line" /> THE DISPATCH 5 DIFFERENCE</div><h2>Not a load board.<br /><em>A better operating rhythm.</em></h2></div>
+              <div><div className="eyebrow"><span className="eyebrow-line" /> THE AMERICAN LOGISTICS DIFFERENCE</div><h2>Not a load board.<br /><em>A better operating rhythm.</em></h2></div>
               <div className="heading-side"><p>Your truck is your business. We bring a sharper eye to every load, every call, and every mile.</p><a className="text-link" href="#process">See the process <ArrowRight size={16} /></a></div>
             </ScrollReveal>
             <ScrollReveal className="benefit-layout" delay={80}>
@@ -608,12 +608,12 @@ function Home() {
         <section className="section contact-section" id="contact">
           <div className="container contact-layout">
             <ScrollReveal className="contact-copy"><div className="eyebrow"><span className="eyebrow-line" /> READY WHEN YOU ARE</div><h2>Put your truck<br /><em>in motion.</em></h2><p>Tell us a little about your operation. We will come back with a clear next step — not a hard sell.</p><div className="contact-details"><a href={`tel:${PHONE_DIGITS}`}><span><Phone size={17} /></span><div><small>CALL THE DISPATCH DESK</small><strong>{PHONE}</strong></div></a><a href={`mailto:${EMAIL}`}><span><Mail size={17} /></span><div><small>EMAIL THE TEAM</small><strong>{EMAIL}</strong></div></a></div></ScrollReveal>
-            <ScrollReveal className="lead-form-wrap" delay={120}>{submitted ? <div className="form-success"><div className="success-icon"><CircleCheck size={30} /></div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> REQUEST RECEIVED</div><h3>You're on the radar.</h3><p>Thanks for reaching out. A Dispatch 5 team member will connect with you soon. If you need us now, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p><button className="button button-dark" onClick={() => setSubmitted(false)}>Send another request <ArrowRight size={16} /></button></div> : <form className="lead-form" onSubmit={handleSubmit}><div className="form-heading"><span>01</span><div><small>START A CONVERSATION</small><h3>Let's talk trucks.</h3></div></div><div className="form-row"><label>Full name<input required name="name" placeholder="Your name" /></label><label>Company<input name="company" placeholder="Company name" /></label></div><div className="form-row"><label>Phone<input required type="tel" name="phone" placeholder="(000) 000-0000" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label></div><div className="form-row"><label>Truck type<select name="truckType" defaultValue=""><option value="" disabled>Select equipment</option><option>Box truck</option><option>Dry van</option><option>Reefer</option><option>Flatbed</option><option>Hotshot</option><option>Other</option></select></label><label>MC number<input name="mc" placeholder="Optional" /></label></div><label>What are you looking for?<textarea name="message" placeholder="Tell us about your lanes, home time, or what is not working today..." rows={3} /></label><button className="button button-amber button-submit" type="submit">Get my dispatch options <ArrowUpRight size={17} /></button><small className="form-note">By submitting, you are asking Dispatch 5 Services to contact you about dispatch support.</small></form>}</ScrollReveal>
+            <ScrollReveal className="lead-form-wrap" delay={120}>{submitted ? <div className="form-success"><div className="success-icon"><CircleCheck size={30} /></div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> REQUEST RECEIVED</div><h3>You're on the radar.</h3><p>Thanks for reaching out. An American Logistics team member will connect with you soon. If you need us now, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p><button className="button button-dark" onClick={() => setSubmitted(false)}>Send another request <ArrowRight size={16} /></button></div> : <form className="lead-form" onSubmit={handleSubmit}><div className="form-heading"><span>01</span><div><small>START A CONVERSATION</small><h3>Let's talk trucks.</h3></div></div><div className="form-row"><label>Full name<input required name="name" placeholder="Your name" /></label><label>Company<input name="company" placeholder="Company name" /></label></div><div className="form-row"><label>Phone<input required type="tel" name="phone" placeholder="(000) 000-0000" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label></div><div className="form-row"><label>Truck type<select name="truckType" defaultValue=""><option value="" disabled>Select equipment</option><option>Box truck</option><option>Dry van</option><option>Reefer</option><option>Flatbed</option><option>Hotshot</option><option>Other</option></select></label><label>MC number<input name="mc" placeholder="Optional" /></label></div><label>What are you looking for?<textarea name="message" placeholder="Tell us about your lanes, home time, or what is not working today..." rows={3} /></label><button className="button button-amber button-submit" type="submit">Get my dispatch options <ArrowUpRight size={17} /></button><small className="form-note">By submitting, you are asking American Logistics to contact you about dispatch support.</small></form>}</ScrollReveal>
           </div>
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><BrandMark /><p>Freight dispatching for owner-operators who want a clearer road ahead.</p><div className="footer-links"><a href="#services">Services</a><a href="#advantage">Why Dispatch 5</a><a href="#contact">Contact</a></div></div><div className="container footer-bottom"><span>© 2026 Dispatch 5 Services. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div></footer>
+      <footer className="site-footer"><div className="container footer-top"><BrandMark /><p>Freight dispatching for owner-operators who want a clearer road ahead.</p><div className="footer-links"><a href="#services">Services</a><a href="#advantage">Why us</a><a href="#contact">Contact</a></div></div><div className="container footer-bottom"><span>© 2026 American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div></footer>
     </div>
   );
 }

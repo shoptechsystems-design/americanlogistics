@@ -92,7 +92,7 @@
 
 
 /* Generated brand artwork: kept under the route system so copy remains text-safe. */
-.hero-section { background-image: linear-gradient(90deg, rgba(9,12,16,.98) 0%, rgba(9,12,16,.87) 38%, rgba(9,12,16,.36) 76%, rgba(9,12,16,.64) 100%), url('/manus-storage/dispatch5-hero_7ec1aebe.jpg'); background-size: cover; background-position: center; }
+.hero-section { background-image: linear-gradient(90deg, rgba(9,12,16,.98) 0%, rgba(9,12,16,.87) 38%, rgba(9,12,16,.36) 76%, rgba(9,12,16,.64) 100%); background-size: cover; background-position: center; }
 .hero-section::after { content: ""; position: absolute; inset: auto 0 0; height: 180px; z-index: -1; background: linear-gradient(transparent, #090c10); pointer-events: none; }
 
 
@@ -154,9 +154,10 @@
 /* Mobile hero simplification: preserve the truck atmosphere, remove desktop HUD density. */
 @media (max-width: 720px) {
   .hero-section {
-    min-height: 840px;
+    min-height: 0;
     padding-top: 138px;
-    background-image: linear-gradient(180deg, rgba(9,12,16,.99) 0%, rgba(9,12,16,.94) 43%, rgba(9,12,16,.42) 100%), url('/manus-storage/dispatch5-hero_7ec1aebe.jpg');
+    padding-bottom: 150px;
+    background-image: linear-gradient(180deg, rgba(9,12,16,.99) 0%, rgba(9,12,16,.94) 43%, rgba(9,12,16,.42) 100%);
     background-size: cover;
     background-position: 67% center;
   }
@@ -362,7 +363,7 @@ img[loading="lazy"] { content-visibility: auto; }
 .freight-fit-panel { perspective: 1200px; }
 .freight-route-art { isolation: isolate; }
 .freight-route-art::before { content: ""; position: absolute; z-index: 1; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(242,177,66,.12), transparent 25%), linear-gradient(115deg, transparent 0 38%, rgba(175,218,206,.035) 50%, transparent 63%); pointer-events: none; }
-.freight-route-art::after { content: "DISPATCH 5 / NETWORK VISUALIZER"; position: absolute; z-index: 5; right: 18px; bottom: 16px; color: rgba(207,225,211,.38); font: 700 7px "Space Grotesk", sans-serif; letter-spacing: .18em; }
+.freight-route-art::after { content: "AMERICAN LOGISTICS / NETWORK VISUALIZER"; position: absolute; z-index: 5; right: 18px; bottom: 16px; color: rgba(207,225,211,.38); font: 700 7px "Space Grotesk", sans-serif; letter-spacing: .18em; }
 .freight-route-grid { opacity: .28; animation: freight-grid-drift 8s linear infinite; }
 .freight-route-scan { position: absolute; z-index: 2; top: -20%; bottom: -20%; left: 22%; width: 1px; background: linear-gradient(180deg, transparent, rgba(239,177,67,.8), transparent); box-shadow: 0 0 18px rgba(239,177,67,.45); transform: rotate(23deg); animation: freight-scan-sweep 5.8s ease-in-out infinite; opacity: .6; }
 .freight-route-stars { position: absolute; z-index: 2; inset: 10% 8%; pointer-events: none; }
@@ -400,3 +401,13 @@ img[loading="lazy"] { content-visibility: auto; }
 @keyframes freight-grid-drift { from { background-position: 0 0; } to { background-position: 34px 34px; } } @keyframes freight-scan-sweep { 0%, 100% { left: 18%; opacity: 0; } 18% { opacity: .7; } 52% { left: 78%; opacity: .55; } 78% { opacity: 0; } } @keyframes freight-star-pulse { 0%, 100% { opacity: .2; transform: scale(.7); } 50% { opacity: .95; transform: scale(1.5); } } @keyframes freight-route-breathe { 0%, 100% { opacity: .7; } 50% { opacity: 1; } } @keyframes freight-route-ping { from { left: 0; opacity: .9; transform: scale(.8); } to { left: 100%; opacity: .1; transform: scale(1.6); } } @keyframes freight-route-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -28; } } @keyframes freight-waypoint-pulse { 0%, 100% { r: 3; opacity: .72; } 50% { r: 5; opacity: 1; } } @keyframes freight-stop-card-in { from { opacity: 0; transform: translateX(-50%) translateY(5px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } } @keyframes freight-stop-card-in-left { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } } @keyframes freight-stop-card-in-right { from { opacity: 0; transform: translateX(5px); } to { opacity: 1; transform: translateX(0); } } @keyframes freight-stop-card-in-bottom { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } } @keyframes freight-node-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } } @keyframes freight-truck-float { 0%, 100% { margin-top: 0; } 50% { margin-top: -5px; } } @keyframes freight-beacon { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @media (max-width: 720px) { .freight-route-art::after { right: 12px; bottom: 10px; font-size: 5px; }.freight-route-telemetry { left: 7%; right: 7%; bottom: 8%; padding: 8px 9px; }.freight-route-telemetry b { font-size: 5px; }.freight-route-telemetry strong { font-size: 8px; }.freight-route-cargo { right: 8%; bottom: 39%; transform: rotate(-7deg) scale(.82); }.route-label-one { left: 12%; top: 25%; }.route-label-two { right: 8%; top: 17%; }.freight-route-stop-card { width: min(172px, calc(100% - 18px)); padding: 11px 12px 10px; }.freight-route-stop-card strong { font-size: 15px; }.freight-route-stop-card p { font-size: 9px; } }
 @media (prefers-reduced-motion: reduce) { .freight-route-grid, .freight-route-scan, .freight-route-stars i, .freight-route-path, .freight-route-path::after, .freight-route-path i, .freight-route-map-flow, .freight-route-waypoint, .freight-route-stop-card, .freight-route-truck, .freight-truck-beacon { animation: none; }.freight-route-runner { display: none; } }
+
+/* Responsive polish */
+img, svg, video { max-width: 100%; }
+@media (max-width: 1100px) { .desktop-nav a, .nav-actions .button { white-space: nowrap; } }
+@media (max-width: 560px) {
+  .nav-actions .button { white-space: nowrap; padding-left: 14px; padding-right: 14px; }
+  .brand-copy strong { font-size: 14px; letter-spacing: .08em; }
+  .top-strip-inner > span:nth-of-type(4) { display: none; }
+}
+@media (min-width: 721px) and (max-width: 1100px) { .hero-visual { margin-left: -90px; } }
