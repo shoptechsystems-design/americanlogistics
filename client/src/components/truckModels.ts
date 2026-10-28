@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { mergeStaticMeshes } from "./meshUtils";
 
 export type EquipmentKey = "box-truck" | "dry-van" | "reefer" | "flatbed";
 
@@ -67,13 +68,14 @@ function bodyTexture(aspect: number, sub: string, snowflake = false) {
 
 export interface TruckModel {
   group: THREE.Group;
-  spinners: THREE.Group[];
+  /** Rotate every wheel to this angle (radians). Cheap: updates four instanced meshes. */
+  setWheelAngle: (angle: number) => void;
   dispose: () => void;
 }
 
 export function createTruck(type: EquipmentKey, small = false): TruckModel {
   const group = new THREE.Group();
-  const spinners: THREE.Group[] = [];
+  const wheelSpots: [number, number][] = [];
   const disposables: Disposable[] = [];
   const seg = small ? 2 : 4;
 
@@ -98,22 +100,30 @@ export function createTruck(type: EquipmentKey, small = false): TruckModel {
   };
   const rbox = (w: number, h: number, d: number, r = 0.12) => new RoundedBoxGeometry(w, h, d, seg, r);
 
-  const makeWheel = (x: number, z: number) => {
-    const g = new THREE.Group();
-    g.position.set(x, 0.58, z);
-    const spin = new THREE.Group();
-    g.add(spin);
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.4, small ? 18 : 28), tire);
-    t.rotation.x = Math.PI / 2;
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.43, 20), chrome);
-    rim.rotation.x = Math.PI / 2;
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.46, 10), accent);
-    hub.rotation.x = Math.PI / 2;
-    const lug = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, 0.46), dark);
-    spin.add(t, rim, hub, lug);
-    group.add(g);
-    spinners.push(spin);
-    disposables.push(t.geometry, rim.geometry, hub.geometry, lug.geometry);
+  const makeWheel = (x: number, z: number) => { wheelSpots.push([x, z]); };
+
+  /** One instanced mesh per wheel part instead of ~40 separate meshes. */
+  const buildWheels = () => {
+    const n = wheelSpots.length;
+    const parts: [THREE.BufferGeometry, THREE.Material][] = [
+      [new THREE.CylinderGeometry(0.58, 0.58, 0.4, small ? 18 : 28).rotateX(Math.PI / 2), tire],
+      [new THREE.CylinderGeometry(0.34, 0.34, 0.43, 20).rotateX(Math.PI / 2), chrome],
+      [new THREE.CylinderGeometry(0.11, 0.11, 0.46, 10).rotateX(Math.PI / 2), accent],
+      [new THREE.BoxGeometry(0.62, 0.05, 0.46), dark],
+    ];
+    const meshes = parts.map(([geo, material]) => { disposables.push(geo); const m = new THREE.InstancedMesh(geo, material, n); m.frustumCulled = false; group.add(m); return m; });
+    const tmp = new THREE.Matrix4();
+    const rot = new THREE.Matrix4();
+    const setWheelAngle = (angle: number) => {
+      rot.makeRotationZ(angle);
+      wheelSpots.forEach(([x, z], i) => {
+        tmp.makeTranslation(x, 0.58, z).multiply(rot);
+        meshes.forEach((m) => m.setMatrixAt(i, tmp));
+      });
+      meshes.forEach((m) => { m.instanceMatrix.needsUpdate = true; });
+    };
+    setWheelAngle(0);
+    return setWheelAngle;
   };
 
   const brandPlane = (width: number, height: number, x: number, y: number, zOffset: number, sub: string, snow = false) => {
@@ -148,7 +158,9 @@ export function createTruck(type: EquipmentKey, small = false): TruckModel {
     for (const z of [-1.12, 1.12]) add(new THREE.BoxGeometry(0.1, 0.65, 0.18), dark, 1.1, 2.85, z * 1.28);
     for (const z of [-1.05, 1.05]) makeWheel(2.0, z);
     for (const z of [-0.95, -1.45, 0.95, 1.45]) makeWheel(-4.6, z);
-    return { group, spinners, dispose: () => disposables.forEach((d) => d.dispose()) };
+    disposables.push(...mergeStaticMeshes(group));
+    const setWheelAngle = buildWheels();
+    return { group, setWheelAngle, dispose: () => disposables.forEach((d) => d.dispose()) };
   }
 
   // ---------------- Semi tractor (shared) ----------------
@@ -216,5 +228,7 @@ export function createTruck(type: EquipmentKey, small = false): TruckModel {
     for (const x of [-8.9, -10.1]) for (const z of [-1.0, -1.5, 1.0, 1.5]) makeWheel(x, z);
   }
 
-  return { group, spinners, dispose: () => disposables.forEach((d) => d.dispose()) };
+  disposables.push(...mergeStaticMeshes(group));
+  const setWheelAngle = buildWheels();
+  return { group, setWheelAngle, dispose: () => disposables.forEach((d) => d.dispose()) };
 }

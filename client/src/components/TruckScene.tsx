@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { createTruck } from "./truckModels";
+import { mergeTransformed } from "./meshUtils";
 
 type ViewKey = "front" | "side" | "chase";
 
@@ -12,58 +13,38 @@ const VIEWS: Record<ViewKey, { label: string; pos: [number, number, number]; tar
 };
 
 const AMBER = 0xff9f1c;
-const WRAP = 110; // environment loops across [-WRAP, WRAP]
+const ROAD_LEN = 300;
+const DASH_PERIOD = 12;
+const LAMP_SPACING = 15.7;
+const SKY_PERIOD = 160;
 
-function radialTexture(inner: string, outer = "rgba(0,0,0,0)") {
+function radialTexture(inner: string) {
   const c = document.createElement("canvas");
   c.width = c.height = 128;
   const g = c.getContext("2d")!;
   const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
   grad.addColorStop(0, inner);
-  grad.addColorStop(1, outer);
+  grad.addColorStop(1, "rgba(0,0,0,0)");
   g.fillStyle = grad;
   g.fillRect(0, 0, 128, 128);
   return new THREE.CanvasTexture(c);
 }
 
-function trailerTexture() {
+/** Lane markings + edge lines painted once on a repeating texture. Scrolling its offset = a moving road. */
+function roadMarkingTexture() {
+  const W = 256, H = 512;
   const c = document.createElement("canvas");
-  c.width = 2048;
-  c.height = 560;
+  c.width = W; c.height = H;
   const g = c.getContext("2d")!;
-  const bg = g.createLinearGradient(0, 0, 0, 560);
-  bg.addColorStop(0, "#f4f7fb");
-  bg.addColorStop(1, "#cfd8e2");
-  g.fillStyle = bg;
-  g.fillRect(0, 0, 2048, 560);
+  const laneV = [0.5 - 1.35 / 9, 0.5 + 1.35 / 9];
   g.fillStyle = "#ff9f1c";
-  g.fillRect(0, 430, 2048, 46);
-  g.fillStyle = "#0c1219";
-  g.fillRect(0, 476, 2048, 84);
-  // mark
-  g.save();
-  g.translate(250, 215);
-  g.rotate(Math.PI / 4);
-  g.strokeStyle = "#ff9f1c";
-  g.lineWidth = 16;
-  g.strokeRect(-70, -70, 140, 140);
-  g.restore();
-  g.fillStyle = "#ff9f1c";
-  g.beginPath(); g.arc(205, 245, 17, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.arc(300, 185, 17, 0, Math.PI * 2); g.fill();
-  g.strokeStyle = "#ff9f1c"; g.lineWidth = 11;
-  g.beginPath(); g.moveTo(205, 245); g.lineTo(300, 185); g.stroke();
-  g.textBaseline = "alphabetic";
-  g.fillStyle = "#0c1219";
-  g.font = "900 150px Arial Black, Helvetica, Arial, sans-serif";
-  g.fillText("AMERICAN", 440, 235);
-  g.fillStyle = "#ff8a00";
-  g.fillText("LOGISTICS", 440, 380);
-  g.fillStyle = "#44525f";
-  g.font = "700 46px Helvetica, Arial, sans-serif";
-  g.fillText("FREIGHT DISPATCH  ·  24/7  ·  CARRIER FIRST", 444, 428 - 0);
+  for (const v of laneV) g.fillRect(0, v * H - 4, W * 0.25, 8);
+  g.fillStyle = "#aab8c8";
+  for (const v of [0.5 - 4.1 / 9, 0.5 + 4.1 / 9]) g.fillRect(0, v * H - 3, W, 6);
   const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.repeat.set(ROAD_LEN / DASH_PERIOD, 1);
   tex.anisotropy = 4;
   return tex;
 }
@@ -79,290 +60,192 @@ export default function TruckScene() {
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    let cancelled = false;
+    const cleanups: Array<() => void> = [];
+    // Yield between heavy steps so scrolling and painting stay smooth while the scene is built.
+    const yieldToBrowser = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
+    void (async () => {
+    const small = window.innerWidth < 720;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({ antialias: !small, alpha: false, powerPreference: "high-performance" });
     } catch {
       return;
     }
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const small = window.innerWidth < 720;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
+    const maxDpr = Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.5);
+    let dpr = maxDpr;
+    renderer.setPixelRatio(dpr);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     renderer.domElement.setAttribute("aria-hidden", "true");
     mount.appendChild(renderer.domElement);
+    const perfMode = location.search.includes("perf");
 
     const scene = new THREE.Scene();
     const NIGHT = 0x060a10;
     scene.background = new THREE.Color(NIGHT);
     scene.fog = new THREE.Fog(NIGHT, 28, 120);
 
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const disposables: { dispose: () => void }[] = [];
+    const track = <T extends { dispose: () => void }>(d: T): T => { disposables.push(d); return d; };
+    cleanups.push(() => { disposables.forEach((d) => d.dispose()); renderer.dispose(); renderer.domElement.remove(); });
+    await yieldToBrowser();
+    if (cancelled) return;
+
+    const pmrem = track(new THREE.PMREMGenerator(renderer));
+    const envTexture = track(pmrem.fromScene(new RoomEnvironment(), 0.04).texture);
     scene.environment = envTexture;
     scene.environmentIntensity = 0.7;
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
 
-    // ---------- lights ----------
     scene.add(new THREE.HemisphereLight(0x7f9fca, 0x121a26, 1.0));
     const moon = new THREE.DirectionalLight(0xb4cdf2, 1.7);
     moon.position.set(-14, 20, 18);
     scene.add(moon);
-    const rim = new THREE.DirectionalLight(0xff9f1c, 1.1);
+    const rim = new THREE.DirectionalLight(AMBER, 1.1);
     rim.position.set(14, 6, -16);
     scene.add(rim);
 
-    // ---------- materials ----------
-    const cabPaint = new THREE.MeshStandardMaterial({ color: 0x33465e, metalness: 0.55, roughness: 0.32 });
-    const chrome = new THREE.MeshStandardMaterial({ color: 0xcfd6de, metalness: 1, roughness: 0.18 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x151b23, metalness: 0.4, roughness: 0.65 });
-    const glass = new THREE.MeshStandardMaterial({ color: 0x1d3a5a, metalness: 0.9, roughness: 0.06 });
-    const tire = new THREE.MeshStandardMaterial({ color: 0x0a0c0f, metalness: 0.1, roughness: 0.9 });
-    const trailerBody = new THREE.MeshStandardMaterial({ color: 0xdfe6ee, metalness: 0.35, roughness: 0.45 });
-    const accent = new THREE.MeshStandardMaterial({ color: AMBER, emissive: AMBER, emissiveIntensity: 0.35, metalness: 0.3, roughness: 0.4 });
-    const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfff3d6 });
-    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2a1f });
-    const markerMat = new THREE.MeshBasicMaterial({ color: 0xffb347 });
+    await yieldToBrowser();
+    if (cancelled) return;
 
-    const disposables: { dispose: () => void }[] = [cabPaint, chrome, dark, glass, tire, trailerBody, accent, headlightMat, tailMat, markerMat, envTexture, pmrem];
-
-    const truck = new THREE.Group();
+    // ---------- truck (shared model, merged into a handful of draw calls) ----------
+    const model = createTruck("dry-van", small);
+    track(model);
+    const truck = model.group;
     scene.add(truck);
-    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D = truck) => {
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      parent.add(m);
-      disposables.push(geo);
-      return m;
-    };
-    const rbox = (w: number, h: number, d: number, r = 0.12) => new RoundedBoxGeometry(w, h, d, small ? 2 : 4, r);
 
-    // chassis
-    add(new THREE.BoxGeometry(14, 0.32, 1.15), dark, -3.2, 0.78, 0);
-    // hood + grille + bumper + lights
-    add(rbox(2.0, 1.5, 2.15, 0.2), cabPaint, 2.95, 1.78, 0);
-    add(new THREE.BoxGeometry(0.06, 1.0, 1.55), chrome, 3.97, 1.78, 0);
-    add(rbox(0.34, 0.46, 2.45, 0.1), chrome, 4.02, 0.98, 0);
-    for (const z of [-0.82, 0.82]) add(new THREE.BoxGeometry(0.08, 0.3, 0.5), headlightMat, 3.96, 2.0, z);
-    for (let i = 0; i < 6; i++) add(new THREE.BoxGeometry(0.02, 0.92, 0.02), dark, 3.99, 1.78, -0.6 + i * 0.24);
-    // cab
-    add(rbox(2.15, 2.4, 2.5, 0.22), cabPaint, 1.0, 2.42, 0);
-    const windshield = add(new THREE.BoxGeometry(0.06, 1.05, 2.15), glass, 2.06, 2.95, 0);
-    windshield.rotation.z = -0.18;
-    for (const z of [-1.26, 1.26]) add(new THREE.BoxGeometry(1.2, 0.95, 0.04), glass, 1.35, 2.95, z);
-    // sleeper + roof deflector
-    add(rbox(1.8, 2.7, 2.5, 0.18), cabPaint, -0.95, 2.55, 0);
-    const deflector = add(rbox(1.5, 0.7, 2.25, 0.18), cabPaint, 0.45, 4.05, 0);
-    deflector.rotation.z = -0.28;
-    add(new THREE.BoxGeometry(2.0, 0.07, 2.32), accent, 1.0, 3.64, 0);
-    // door accent stripe
-    for (const z of [-1.27, 1.27]) add(new THREE.BoxGeometry(3.6, 0.1, 0.03), accent, 0.1, 1.95, z);
-    // stacks + tanks
-    for (const z of [-1.4, 1.4]) {
-      add(new THREE.CylinderGeometry(0.09, 0.09, 2.7, 12), chrome, -1.9, 3.1, z);
-      const tank = add(new THREE.CylinderGeometry(0.42, 0.42, 1.7, 20), chrome, 1.2, 1.0, z * 0.95);
-      tank.rotation.z = Math.PI / 2;
-    }
-    // mirrors
-    for (const z of [-1.55, 1.55]) {
-      add(new THREE.BoxGeometry(0.1, 0.65, 0.18), dark, 1.9, 3.1, z);
-    }
-    // trailer
-    add(rbox(9.8, 3.1, 2.55, 0.08), trailerBody, -5.5, 2.75, 0);
-    add(new THREE.BoxGeometry(9.9, 0.38, 2.3), dark, -5.5, 1.0, 0);
-    const logoTex = trailerTexture();
-    disposables.push(logoTex);
-    const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, toneMapped: false });
-    disposables.push(logoMat);
-    for (const sign of [1, -1]) {
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(9.6, 2.64), logoMat);
-      plane.position.set(-5.5, 2.78, sign * 1.285);
-      plane.rotation.y = sign === 1 ? 0 : Math.PI;
-      truck.add(plane);
-      disposables.push(plane.geometry);
-    }
-    // trailer lights
-    for (const z of [-1.0, 1.0]) add(new THREE.BoxGeometry(0.06, 0.28, 0.4), tailMat, -10.42, 1.4, z);
-    for (let i = 0; i < 8; i++) for (const z of [-1.29, 1.29]) add(new THREE.BoxGeometry(0.22, 0.09, 0.04), markerMat, -1.2 - i * 1.2, 1.25, z);
-    // landing gear + fifth wheel
-    add(new THREE.BoxGeometry(1.1, 0.14, 1.6), dark, -0.55, 1.05, 0);
-
-    // wheels (axle along Z, spinning around Z)
-    const spinners: THREE.Group[] = [];
-    const makeWheel = (x: number, z: number) => {
-      const g = new THREE.Group();
-      g.position.set(x, 0.58, z);
-      const spin = new THREE.Group();
-      g.add(spin);
-      const t = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.4, small ? 18 : 28), tire);
-      t.rotation.x = Math.PI / 2;
-      const rimMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.43, 20), chrome);
-      rimMesh.rotation.x = Math.PI / 2;
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.46, 10), accent);
-      hub.rotation.x = Math.PI / 2;
-      const lug = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, 0.46), dark); // visible spin cue
-      spin.add(t, rimMesh, hub, lug);
-      truck.add(g);
-      spinners.push(spin);
-      disposables.push(t.geometry, rimMesh.geometry, hub.geometry, lug.geometry);
-    };
-    for (const z of [-1.18, 1.18]) makeWheel(3.0, z);
-    for (const x of [-0.2, -1.5]) for (const z of [-1.0, -1.5, 1.0, 1.5]) makeWheel(x, z);
-    for (const x of [-8.6, -9.8]) for (const z of [-1.0, -1.5, 1.0, 1.5]) makeWheel(x, z);
-
-    // headlight beams
-    const beamMat = new THREE.MeshBasicMaterial({ color: 0xffe9b8, transparent: true, opacity: 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
-    disposables.push(beamMat);
+    // headlight beams + glow (additive, cheap)
+    const beamMat = track(new THREE.MeshBasicMaterial({ color: 0xffe9b8, transparent: true, opacity: 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    const beamGeo = track(new THREE.ConeGeometry(2.4, 16, 20, 1, true));
     for (const z of [-0.82, 0.82]) {
-      const beam = new THREE.Mesh(new THREE.ConeGeometry(2.4, 16, 24, 1, true), beamMat);
+      const beam = new THREE.Mesh(beamGeo, beamMat);
       beam.rotation.z = Math.PI / 2;
-      beam.position.set(4.0 + 8, 1.5, z * 1.4);
-      beam.rotation.x = z > 0 ? -0.04 : 0.04;
+      beam.position.set(12, 1.5, z * 1.4);
       truck.add(beam);
-      disposables.push(beam.geometry);
     }
-    const spot = new THREE.SpotLight(0xffe2a8, 120, 60, 0.5, 0.6, 1.4);
-    spot.position.set(4.1, 1.9, 0);
-    spot.target.position.set(24, 0, 0);
-    truck.add(spot, spot.target);
-    // headlight glow sprite
-    const glowTex = radialTexture("rgba(255,236,190,.7)");
-    disposables.push(glowTex);
-    const lightSprite = new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-    disposables.push(lightSprite);
+    const glowTex = track(radialTexture("rgba(255,236,190,.7)"));
+    const headGlow = track(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
     for (const z of [-0.82, 0.82]) {
-      const s = new THREE.Sprite(lightSprite);
+      const s = new THREE.Sprite(headGlow);
       s.scale.set(1.5, 1.5, 1);
       s.position.set(4.15, 2.0, z);
       truck.add(s);
     }
-    const redGlow = new THREE.SpriteMaterial({ map: radialTexture("rgba(255,50,40,.9)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false });
-    disposables.push(redGlow);
+    const redGlow = track(new THREE.SpriteMaterial({ map: track(radialTexture("rgba(255,50,40,.9)")), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
     for (const z of [-1.0, 1.0]) {
       const s = new THREE.Sprite(redGlow);
       s.scale.set(1.8, 1.8, 1);
       s.position.set(-10.5, 1.4, z);
       truck.add(s);
     }
+    // light pool on the road ahead of the truck (replaces an expensive spotlight)
+    const poolAhead = new THREE.Mesh(track(new THREE.PlaneGeometry(26, 7)), track(new THREE.MeshBasicMaterial({ map: track(radialTexture("rgba(255,226,170,.34)")), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
+    poolAhead.rotation.x = -Math.PI / 2;
+    poolAhead.position.set(15, 0.03, 0);
+    scene.add(poolAhead);
 
-    // ---------- world ----------
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x0b1017, metalness: 0.35, roughness: 0.3 });
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x070b10, roughness: 1 });
-    disposables.push(roadMat, groundMat);
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(WRAP * 2.4, 9), roadMat);
+    // ---------- road: one plane for asphalt, one scrolling texture for every marking ----------
+    const roadMat = track(new THREE.MeshStandardMaterial({ color: 0x0b1017, metalness: 0.35, roughness: 0.3 }));
+    const groundMat = track(new THREE.MeshStandardMaterial({ color: 0x070b10, roughness: 1 }));
+    const road = new THREE.Mesh(track(new THREE.PlaneGeometry(ROAD_LEN, 9)), roadMat);
     road.rotation.x = -Math.PI / 2;
     scene.add(road);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(WRAP * 2.4, 120), groundMat);
+    const ground = new THREE.Mesh(track(new THREE.PlaneGeometry(ROAD_LEN, 120)), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     scene.add(ground);
-    disposables.push(road.geometry, ground.geometry);
-    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xaab8c8 });
-    disposables.push(edgeMat);
-    for (const z of [-4.1, 4.1]) {
-      const edge = new THREE.Mesh(new THREE.PlaneGeometry(WRAP * 2.4, 0.14), edgeMat);
-      edge.rotation.x = -Math.PI / 2;
-      edge.position.set(0, 0.012, z);
-      scene.add(edge);
-      disposables.push(edge.geometry);
-    }
+    const markingTex = track(roadMarkingTexture());
+    const markings = new THREE.Mesh(road.geometry, track(new THREE.MeshBasicMaterial({ map: markingTex, transparent: true, depthWrite: false })));
+    markings.rotation.x = -Math.PI / 2;
+    markings.position.y = 0.012;
+    scene.add(markings);
 
-    const looping: THREE.Object3D[] = [];
-    const dashGeo = new THREE.PlaneGeometry(3, 0.2);
-    const dashMat = new THREE.MeshBasicMaterial({ color: AMBER });
-    disposables.push(dashGeo, dashMat);
-    for (let i = 0; i < 40; i++) {
-      for (const z of [-1.35, 1.35]) {
-        const d = new THREE.Mesh(dashGeo, dashMat);
-        d.rotation.x = -Math.PI / 2;
-        d.position.set(-WRAP + (i / 40) * WRAP * 2, 0.014, z);
-        scene.add(d);
-        looping.push(d);
-      }
-    }
+    // guard rail (far side only)
+    const chrome = track(new THREE.MeshStandardMaterial({ color: 0xcfd6de, metalness: 1, roughness: 0.18 }));
+    const rail = new THREE.Mesh(track(new THREE.BoxGeometry(ROAD_LEN, 0.16, 0.08)), chrome);
+    rail.position.set(0, 0.7, -6.5);
+    scene.add(rail);
 
-    // lamp posts
-    const poleGeo = new THREE.CylinderGeometry(0.07, 0.1, 7.2, 8);
-    const armGeo = new THREE.BoxGeometry(0.1, 0.1, 1.9);
-    const headGeo = new THREE.BoxGeometry(0.5, 0.1, 0.34);
-    const lampMat = new THREE.MeshBasicMaterial({ color: 0xfff1cf });
-    const poolTex = radialTexture("rgba(255,214,150,.38)");
-    const poolMat = new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-    const poolGeo = new THREE.PlaneGeometry(10, 8);
-    const lampGlow = new THREE.SpriteMaterial({ map: radialTexture("rgba(255,214,150,.8)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
-    disposables.push(poleGeo, armGeo, headGeo, lampMat, poolTex, poolMat, poolGeo, lampGlow);
-    const lampCount = small ? 8 : 14;
+    await yieldToBrowser();
+    if (cancelled) return;
+
+    // ---------- street lamps: a static, periodic row merged into 4 draw calls, slid along the road ----------
+    const darkMat = track(new THREE.MeshStandardMaterial({ color: 0x151b23, metalness: 0.4, roughness: 0.65 }));
+    const lampMat = track(new THREE.MeshBasicMaterial({ color: 0xfff1cf }));
+    const poolTex = track(radialTexture("rgba(255,214,150,.38)"));
+    const poolMat = track(new THREE.MeshBasicMaterial({ map: poolTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const poleGeo = track(new THREE.CylinderGeometry(0.07, 0.1, 7.2, 8));
+    const armGeo = track(new THREE.BoxGeometry(0.1, 0.1, 1.9));
+    const headGeo = track(new THREE.BoxGeometry(0.5, 0.1, 0.34));
+    const poolGeo = track(new THREE.PlaneGeometry(10, 8).rotateX(-Math.PI / 2));
+    const lampCount = Math.ceil((ROAD_LEN * 0.6) / LAMP_SPACING);
+    type Part = { geometry: THREE.BufferGeometry; matrix: THREE.Matrix4 };
+    const darkParts: Part[] = [];
+    const headParts: Part[] = [];
+    const poolParts: Part[] = [];
+    const glowPositions: number[] = [];
     for (let i = 0; i < lampCount; i++) {
-      for (const side of [-1]) {
-        const post = new THREE.Group();
-        const pole = new THREE.Mesh(poleGeo, dark);
-        pole.position.y = 3.6;
-        const arm = new THREE.Mesh(armGeo, dark);
-        arm.position.set(0, 7.1, -side * 0.9);
-        const head = new THREE.Mesh(headGeo, lampMat);
-        head.position.set(0, 7.04, -side * 1.7);
-        const glowSprite = new THREE.Sprite(lampGlow);
-        glowSprite.scale.set(4, 4, 1);
-        glowSprite.position.set(0, 7.0, -side * 1.7);
-        const pool = new THREE.Mesh(poolGeo, poolMat);
-        pool.rotation.x = -Math.PI / 2;
-        pool.position.set(0, 0.02, -side * 3.2);
-        post.add(pole, arm, head, glowSprite, pool);
-        post.position.set(-WRAP + (i / lampCount) * WRAP * 2 + (side > 0 ? 7 : 0), 0, side * 5.6);
-        scene.add(post);
-        looping.push(post);
-      }
+      const x = (i - lampCount / 2) * LAMP_SPACING;
+      darkParts.push({ geometry: poleGeo, matrix: new THREE.Matrix4().makeTranslation(x, 3.6, -5.6) });
+      darkParts.push({ geometry: armGeo, matrix: new THREE.Matrix4().makeTranslation(x, 7.1, -4.7) });
+      headParts.push({ geometry: headGeo, matrix: new THREE.Matrix4().makeTranslation(x, 7.04, -3.9) });
+      poolParts.push({ geometry: poolGeo, matrix: new THREE.Matrix4().makeTranslation(x, 0.02, -2.4) });
+      glowPositions.push(x, 7.0, -3.9);
     }
-
-    // guard rail
-    for (const z of [-6.5]) {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(WRAP * 2.4, 0.16, 0.08), chrome);
-      rail.position.set(0, 0.7, z);
-      scene.add(rail);
-      disposables.push(rail.geometry);
+    const lamps = new THREE.Group();
+    for (const [parts, material] of [[darkParts, darkMat], [headParts, lampMat], [poolParts, poolMat]] as [Part[], THREE.Material][]) {
+      const geo = mergeTransformed(parts);
+      if (geo) { track(geo); lamps.add(new THREE.Mesh(geo, material)); }
     }
+    const glowGeo = track(new THREE.BufferGeometry());
+    glowGeo.setAttribute("position", new THREE.Float32BufferAttribute(glowPositions, 3));
+    lamps.add(new THREE.Points(glowGeo, track(new THREE.PointsMaterial({ map: track(radialTexture("rgba(255,214,150,.8)")), size: 4.2, sizeAttenuation: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }))));
+    scene.add(lamps);
 
-    // skyline (slow parallax)
-    const skylineGroup = new THREE.Group();
-    const bldGeo = new THREE.BoxGeometry(1, 1, 1);
-    const bldMat = new THREE.MeshStandardMaterial({ color: 0x0b121b, roughness: 0.9 });
-    const winGeo = new THREE.PlaneGeometry(0.14, 0.2);
-    const winMat = new THREE.MeshBasicMaterial({ color: 0xffc45e });
-    disposables.push(bldGeo, bldMat, winGeo, winMat);
+    // ---------- skyline: one period of buildings merged, tiled three times, slid slowly ----------
     let seed = 7;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const buildings = small ? 34 : 60;
+    const bldBox = track(new THREE.BoxGeometry(1, 1, 1));
+    const winQuad = track(new THREE.PlaneGeometry(0.14, 0.2));
+    const bldParts: Part[] = [];
+    const winParts: Part[] = [];
+    const buildings = small ? 22 : 36;
     for (let i = 0; i < buildings; i++) {
       const w = 3 + rnd() * 6, h = 4 + rnd() * 26, d = 3 + rnd() * 5;
-      const b = new THREE.Mesh(bldGeo, bldMat);
-      b.scale.set(w, h, d);
-      const x = -WRAP * 1.2 + (i / buildings) * WRAP * 2.4;
-      b.position.set(x, h / 2, -34 - rnd() * 22);
-      skylineGroup.add(b);
+      const x = (i / buildings) * SKY_PERIOD;
+      const z = -34 - rnd() * 22;
+      bldParts.push({ geometry: bldBox, matrix: new THREE.Matrix4().compose(new THREE.Vector3(x, h / 2, z), new THREE.Quaternion(), new THREE.Vector3(w, h, d)) });
       const lit = Math.floor(rnd() * 7);
-      for (let k = 0; k < lit; k++) {
-        const win = new THREE.Mesh(winGeo, winMat);
-        win.position.set(x + (rnd() - 0.5) * (w - 1), 1.5 + rnd() * (h - 2), b.position.z + d / 2 + 0.02);
-        skylineGroup.add(win);
-      }
+      for (let k = 0; k < lit; k++) winParts.push({ geometry: winQuad, matrix: new THREE.Matrix4().makeTranslation(x + (rnd() - 0.5) * (w - 1), 1.5 + rnd() * (h - 2), z + d / 2 + 0.02) });
     }
-    scene.add(skylineGroup);
+    const bldGeo = track(mergeTransformed(bldParts)!);
+    const winGeo = track(mergeTransformed(winParts)!);
+    const bldMat = track(new THREE.MeshStandardMaterial({ color: 0x0b121b, roughness: 0.9 }));
+    const winMat = track(new THREE.MeshBasicMaterial({ color: 0xffc45e }));
+    const skyline = new THREE.Group();
+    for (let k = -1; k <= 1; k++) {
+      const tile = new THREE.Group();
+      tile.position.x = k * SKY_PERIOD;
+      tile.add(new THREE.Mesh(bldGeo, bldMat), new THREE.Mesh(winGeo, winMat));
+      skyline.add(tile);
+    }
+    scene.add(skyline);
 
-    // stars + horizon glow
-    const starPos = new Float32Array(500 * 3);
-    for (let i = 0; i < 500; i++) {
+    // ---------- stars + horizon glow ----------
+    const starPos = new Float32Array(400 * 3);
+    for (let i = 0; i < 400; i++) {
       const a = rnd() * Math.PI * 2, r = 120 + rnd() * 60;
       starPos.set([Math.cos(a) * r, 25 + rnd() * 80, Math.sin(a) * r - 30], i * 3);
     }
-    const starGeo = new THREE.BufferGeometry();
+    const starGeo = track(new THREE.BufferGeometry());
     starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
-    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xcfe0ff, size: 0.7, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.8 }));
-    scene.add(stars);
-    disposables.push(starGeo, stars.material as THREE.Material);
-    const horizonTex = (() => {
+    const starMat = track(new THREE.PointsMaterial({ color: 0xcfe0ff, size: 0.7, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.8 }));
+    scene.add(new THREE.Points(starGeo, starMat));
+    const horizonTex = track((() => {
       const c = document.createElement("canvas");
       c.width = 4; c.height = 256;
       const g = c.getContext("2d")!;
@@ -372,11 +255,13 @@ export default function TruckScene() {
       grad.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = grad; g.fillRect(0, 0, 4, 256);
       return new THREE.CanvasTexture(c);
-    })();
-    const horizon = new THREE.Mesh(new THREE.PlaneGeometry(500, 70), new THREE.MeshBasicMaterial({ map: horizonTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    })());
+    const horizon = new THREE.Mesh(track(new THREE.PlaneGeometry(500, 70)), track(new THREE.MeshBasicMaterial({ map: horizonTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })));
     horizon.position.set(0, 33, -70);
     scene.add(horizon);
-    disposables.push(horizonTex, horizon.geometry, horizon.material as THREE.Material);
+
+    await yieldToBrowser();
+    if (cancelled) return;
 
     // ---------- interaction ----------
     const pointer = { x: 0, y: 0 };
@@ -386,7 +271,7 @@ export default function TruckScene() {
       pointer.x = ((e.clientX - r.left) / r.width - 0.5) * 2;
       pointer.y = ((e.clientY - r.top) / r.height - 0.5) * 2;
     };
-    mount.addEventListener("pointermove", onPointer);
+    mount.addEventListener("pointermove", onPointer, { passive: true });
 
     let scrollBoost = 0;
     let lastScrollY = window.scrollY;
@@ -406,33 +291,34 @@ export default function TruckScene() {
     const camTarget = new THREE.Vector3(...VIEWS.front.target);
     const wantPos = new THREE.Vector3();
     const wantTarget = new THREE.Vector3();
-    const look = new THREE.Vector3();
+    const orbit = new THREE.Vector3();
     let speed = 15;
+    let distance = 0;
+    let wheelAngle = 0;
     let t = 0;
     let last = performance.now();
     let frame = 0;
     let visible = false;
+    let ready = false;
     let hudTick = 0;
+    let slowFrames = 0;
+    let disposed = false;
 
     const render = (dt: number) => {
       const v = VIEWS[viewRef.current];
       wantPos.set(...v.pos);
       wantTarget.set(...v.target);
-      const aspect = camera.aspect;
-      if (aspect < 1.4) {
-        const pull = 1 + (1.4 - aspect) * 0.95;
+      if (camera.aspect < 1.4) {
+        const pull = 1 + (1.4 - camera.aspect) * 0.95;
         wantPos.sub(wantTarget).multiplyScalar(pull).add(wantTarget);
       }
       const k = 1 - Math.exp(-dt * 2.6);
       camPos.lerp(wantPos, k);
       camTarget.lerp(wantTarget, k);
-      const drift = Math.sin(t * 0.22) * 0.1;
-      const orbit = new THREE.Vector3().copy(camPos).sub(camTarget);
-      orbit.applyAxisAngle(THREE.Object3D.DEFAULT_UP, drift + pointer.x * -0.08);
+      orbit.copy(camPos).sub(camTarget).applyAxisAngle(THREE.Object3D.DEFAULT_UP, Math.sin(t * 0.22) * 0.1 + pointer.x * -0.08);
       camera.position.copy(camTarget).add(orbit);
       camera.position.y += pointer.y * -0.35;
-      look.copy(camTarget);
-      camera.lookAt(look);
+      camera.lookAt(camTarget);
       renderer.render(scene, camera);
     };
 
@@ -442,22 +328,30 @@ export default function TruckScene() {
       t += dt;
       scrollBoost *= Math.exp(-dt * 2.2);
       speed += ((15 + scrollBoost) - speed) * (1 - Math.exp(-dt * 3));
-      const dx = speed * dt;
+      distance += speed * dt;
 
-      looping.forEach((o) => { o.position.x -= dx; if (o.position.x < -WRAP) o.position.x += WRAP * 2; });
-      skylineGroup.position.x -= dx * 0.05;
-      if (skylineGroup.position.x < -WRAP * 0.4) skylineGroup.position.x += WRAP * 0.4;
-      const spin = (speed / 0.58) * dt;
-      spinners.forEach((s) => { s.rotation.z -= spin; });
+      markingTex.offset.x = (distance / DASH_PERIOD) % 1;
+      lamps.position.x = -(distance % LAMP_SPACING);
+      skyline.position.x = -((distance * 0.05) % SKY_PERIOD);
+      wheelAngle -= (speed / 0.58) * dt;
+      model.setWheelAngle(wheelAngle);
 
-      const bob = Math.sin(t * 11) * 0.012 * (speed / 15);
-      truck.position.y = bob;
+      truck.position.y = Math.sin(t * 11) * 0.012 * (speed / 15);
       truck.rotation.z = Math.sin(t * 2.1) * 0.003;
       truck.rotation.x = Math.sin(t * 1.3) * 0.002;
 
       render(dt);
+      if (perfMode) (window as unknown as Record<string, unknown>).__calls = renderer.info.render.calls;
 
-      if (speedRef.current && ++hudTick % 6 === 0) speedRef.current.textContent = String(Math.round(speed * 4.1));
+      // adaptive quality: if the device can't hold ~40fps, quietly lower the resolution
+      slowFrames = dt > 0.026 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
+      if (slowFrames > 24 && dpr > 0.8) {
+        dpr = Math.max(0.8, dpr - 0.25);
+        renderer.setPixelRatio(dpr);
+        renderer.setSize(mount.clientWidth, mount.clientHeight, false);
+        slowFrames = 0;
+      }
+      if (speedRef.current && ++hudTick % 8 === 0) speedRef.current.textContent = String(Math.round(speed * 4.1));
       if (visible && !reduceMotion) frame = requestAnimationFrame(tick);
     };
 
@@ -469,7 +363,7 @@ export default function TruckScene() {
       if (w / h > 1.15) camera.setViewOffset(w, h, -w * 0.2, 0, w, h);
       else camera.setViewOffset(w, h, 0, -h * 0.17, w, h);
       camera.updateProjectionMatrix();
-      if (!visible || reduceMotion) render(0.016);
+      if (ready && (!visible || reduceMotion)) render(0.016);
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(mount);
@@ -478,21 +372,32 @@ export default function TruckScene() {
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       cancelAnimationFrame(frame);
-      if (visible) { last = performance.now(); frame = requestAnimationFrame(tick); }
+      if (visible && ready) { last = performance.now(); frame = requestAnimationFrame(tick); }
     }, { threshold: 0.02 });
     observer.observe(mount);
 
-    return () => {
+    // Compile every shader off the critical path, then fade the canvas in over the poster image.
+    const start = async () => {
+      try { await renderer.compileAsync(scene, camera); } catch { /* fall through: first render compiles */ }
+      if (disposed) return;
+      render(0.016);
+      ready = true;
+      mount.parentElement?.classList.add("is-ready");
+      if (visible && !reduceMotion) { last = performance.now(); frame = requestAnimationFrame(tick); }
+    };
+    void start();
+
+    cleanups.push(() => {
+      disposed = true;
       cancelAnimationFrame(frame);
       observer.disconnect();
       resizeObserver.disconnect();
       window.removeEventListener("scroll", onScroll);
       mount.removeEventListener("pointermove", onPointer);
-      disposables.forEach((d) => d.dispose?.());
-      scene.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); });
-      renderer.dispose();
-      renderer.domElement.remove();
-    };
+    });
+    })();
+
+    return () => { cancelled = true; cleanups.forEach((fn) => fn()); };
   }, []);
 
   return (

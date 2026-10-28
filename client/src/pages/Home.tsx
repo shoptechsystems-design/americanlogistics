@@ -131,18 +131,33 @@ function BrandMark() {
   );
 }
 
+/** True once the page has loaded and settled, so heavy 3D work never competes with the first paint. */
+function useSettled(delay = 2500) {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    let timer = 0;
+    const go = () => { timer = window.setTimeout(() => setSettled(true), delay); };
+    if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
+    return () => { window.clearTimeout(timer); window.removeEventListener("load", go); };
+  }, [delay]);
+  return settled;
+}
+
 function LazyGlobe() {
   const holderRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
 
+  const settled = useSettled();
   useEffect(() => {
-    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    if (near) return;
+    const el = holderRef.current;
+    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: "500px 0px" });
-    observer.observe(holderRef.current);
+    }, { rootMargin: settled ? "1400px 0px" : "0px" });
+    observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [settled, near]);
 
   return <div ref={holderRef} className="globe-holder">{near && <Suspense fallback={<div className="globe-loading" />}><NetworkGlobe /></Suspense>}</div>;
 }
@@ -151,16 +166,19 @@ function LazyTruck() {
   const holderRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
 
+  const settled = useSettled();
   useEffect(() => {
-    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    if (near) return;
+    const el = holderRef.current;
+    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: "600px 0px" });
-    observer.observe(holderRef.current);
+    }, { rootMargin: settled ? "1400px 0px" : "0px" });
+    observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [settled, near]);
 
-  return <div ref={holderRef} className="truck-lazy">{near && <Suspense fallback={<div className="truck-loading"><span>Loading 3D scene…</span></div>}><TruckScene /></Suspense>}</div>;
+  return <div ref={holderRef} className="truck-lazy">{near && <><div className="truck-poster" /><Suspense fallback={null}><TruckScene /></Suspense></>}</div>;
 }
 
 function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
@@ -218,14 +236,17 @@ function LazyEquipment({ equipmentKey }: { equipmentKey: EquipmentKey }) {
   const holderRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(false);
 
+  const settled = useSettled();
   useEffect(() => {
-    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    if (near) return;
+    const el = holderRef.current;
+    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: "500px 0px" });
-    observer.observe(holderRef.current);
+    }, { rootMargin: settled ? "1400px 0px" : "0px" });
+    observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [settled, near]);
 
   return <div ref={holderRef} className="equip-lazy">{near && <Suspense fallback={<div className="truck-loading"><span>Loading 3D model…</span></div>}><EquipmentViewer equipment={equipmentKey} /></Suspense>}</div>;
 }
@@ -285,6 +306,37 @@ function Home() {
     }, { threshold: [0.15, 0.35, 0.6], rootMargin: "-18% 0px -55% 0px" });
 
     sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  // Warm the 3D code in the background once the page has settled, so it is cached before anyone scrolls to it.
+  useEffect(() => {
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+    if (saveData) return;
+    let timer = 0;
+    const warm = () => {
+      void import("@/components/TruckScene");
+      void import("@/components/EquipmentViewer");
+      void import("@/components/NetworkGlobe");
+    };
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+        if (idle) idle(warm, { timeout: 6000 }); else warm();
+      }, 2500);
+    };
+    if (document.readyState === "complete") schedule(); else window.addEventListener("load", schedule, { once: true });
+    return () => { window.clearTimeout(timer); window.removeEventListener("load", schedule); };
+  }, []);
+
+  // Load the contact section's background photo only when it is about to be seen.
+  useEffect(() => {
+    const el = document.getElementById("contact");
+    if (!el || !("IntersectionObserver" in window)) { el?.classList.add("is-near"); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { el.classList.add("is-near"); observer.disconnect(); }
+    }, { rootMargin: "900px 0px" });
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 

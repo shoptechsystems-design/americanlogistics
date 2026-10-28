@@ -34,13 +34,14 @@ export default function EquipmentViewer({ equipment }: { equipment: EquipmentKey
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth >= 720, alpha: true, powerPreference: "high-performance" });
     } catch {
       return;
     }
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const small = window.innerWidth < 720;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 1.75));
+    let dpr = Math.min(window.devicePixelRatio || 1, small ? 1.25 : 1.5);
+    renderer.setPixelRatio(dpr);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
     renderer.setClearColor(0x000000, 0);
@@ -140,6 +141,7 @@ export default function EquipmentViewer({ equipment }: { equipment: EquipmentKey
     // ---- loop ----
     let visible = false;
     let frame = 0;
+    let slow = 0;
     let last = performance.now();
     const draw = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -155,6 +157,13 @@ export default function EquipmentViewer({ equipment }: { equipment: EquipmentKey
         turntable.position.y = (1 - e) * -0.6;
       } else { turntable.scale.setScalar(1); turntable.position.y = 0; }
       renderer.render(scene, camera);
+      slow = dt > 0.026 ? slow + 1 : Math.max(0, slow - 2);
+      if (slow > 24 && dpr > 0.8) {
+        dpr = Math.max(0.8, dpr - 0.25);
+        renderer.setPixelRatio(dpr);
+        renderer.setSize(mount.clientWidth, mount.clientHeight, false);
+        slow = 0;
+      }
       if (visible && !reduceMotion) frame = requestAnimationFrame(draw);
     };
 

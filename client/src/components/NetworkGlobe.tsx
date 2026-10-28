@@ -47,7 +47,7 @@ export default function NetworkGlobe() {
     }
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.domElement.setAttribute("aria-hidden", "true");
     mount.appendChild(renderer.domElement);
 
