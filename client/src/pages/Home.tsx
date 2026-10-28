@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -31,16 +31,18 @@ import {
   VolumeX,
 } from "lucide-react";
 
+const NetworkGlobe = lazy(() => import("@/components/NetworkGlobe"));
+
 const PHONE = "+1 (817) 678-4346";
 const PHONE_DIGITS = "+18176784346";
 const EMAIL = "Dispatch5services@gmail.com";
 const SITE_URL = "https://americanlogistics.online";
 
 const stats = [
-  { value: "24/7", label: "Live dispatch desk" },
-  { value: "5+", label: "Equipment types dispatched" },
-  { value: "48", label: "Lower-48 states covered" },
-  { value: "1:1", label: "A real dispatcher on your account" },
+  { value: <>24<span>/</span>7</>, label: "Live dispatch desk" },
+  { value: <CountUp to={5} suffix="+" />, label: "Equipment types dispatched" },
+  { value: <CountUp to={48} />, label: "Lower-48 states covered" },
+  { value: <>1<span>:</span>1</>, label: "A real dispatcher on your account" },
 ];
 
 const scope = [
@@ -118,6 +120,49 @@ function BrandMark() {
       </span>
     </a>
   );
+}
+
+function LazyGlobe() {
+  const holderRef = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
+    }, { rootMargin: "500px 0px" });
+    observer.observe(holderRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={holderRef} className="globe-holder">{near && <Suspense fallback={<div className="globe-loading" />}><NetworkGlobe /></Suspense>}</div>;
+}
+
+function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [value, setValue] = useState(to);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || !("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setValue(0);
+    let raf = 0;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / 1400, 1);
+        setValue(Math.round(to * (1 - Math.pow(1 - progress, 3))));
+        if (progress < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.6 });
+    observer.observe(node);
+    return () => { observer.disconnect(); cancelAnimationFrame(raf); };
+  }, [to]);
+
+  return <span ref={ref}>{value}{suffix}</span>;
 }
 
 function ScrollReveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
@@ -424,6 +469,8 @@ function Home() {
   const [activeFaq, setActiveFaq] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [stuck, setStuck] = useState(false);
+  const progressRef = useRef<HTMLDivElement>(null);
   const [formError, setFormError] = useState("");
   const [activeSection, setActiveSection] = useState("services");
   const heroSceneRef = useRef<HTMLDivElement>(null);
@@ -440,6 +487,46 @@ function Home() {
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${max > 0 ? Math.min(window.scrollY / max, 1) : 0})`;
+      setStuck(window.scrollY > 90);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
+  }, []);
+
+  useEffect(() => {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const selector = ".service-card, .scope-item, .audience-card, .testimonial-card";
+    let active: HTMLElement | null = null;
+    const reset = (el: HTMLElement | null) => { if (!el) return; el.classList.remove("is-tilting"); el.style.removeProperty("--tilt-x"); el.style.removeProperty("--tilt-y"); };
+    const onMove = (event: Event) => {
+      const e = event as globalThis.PointerEvent;
+      if (e.pointerType !== "mouse") return;
+      const el = (e.target as Element).closest<HTMLElement>(selector);
+      if (el !== active) { reset(active); active = el; }
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      el.classList.add("is-tilting");
+      el.style.setProperty("--tilt-x", `${(0.5 - py) * 9}deg`);
+      el.style.setProperty("--tilt-y", `${(px - 0.5) * 11}deg`);
+      el.style.setProperty("--glare-x", `${px * 100}%`);
+      el.style.setProperty("--glare-y", `${py * 100}%`);
+    };
+    const onLeave = () => { reset(active); active = null; };
+    document.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerleave", onLeave);
+    return () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerleave", onLeave); reset(active); };
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -503,7 +590,9 @@ function Home() {
         </div>
       </div>
 
-      <header className={`site-nav ${mobileOpen ? "nav-open" : ""}`}>
+      <div className="scroll-progress" aria-hidden="true"><div ref={progressRef} /></div>
+
+      <header className={`site-nav ${mobileOpen ? "nav-open" : ""} ${stuck ? "nav-stuck" : ""}`}>
         <div className="nav-inner">
           <BrandMark />
           <nav className="desktop-nav" aria-label="Primary navigation">
@@ -653,6 +742,25 @@ function Home() {
           </div>
         </section>
 
+        <section className="section section-navy coverage-section" id="coverage">
+          <div className="advantage-grid-texture" />
+          <div className="container coverage-layout">
+            <ScrollReveal className="coverage-copy">
+              <div className="eyebrow"><span className="eyebrow-line" /> COAST-TO-COAST LANES</div>
+              <h2>Freight that follows<br /><em>your map.</em></h2>
+              <p>From Texas to the Southeast, the Southwest to the Midwest, we build around the lanes you actually want to run — and keep the next load lined up before the current one ends.</p>
+              <ul className="coverage-list">
+                {["Dallas", "Houston", "Atlanta", "Chicago", "Phoenix", "Denver", "Los Angeles", "New York"].map((city) => <li key={city}><i />{city}</li>)}
+              </ul>
+              <a className="button button-amber" href="#contact">Plan my lanes <ArrowUpRight size={16} /></a>
+            </ScrollReveal>
+            <ScrollReveal className="coverage-visual" delay={120}>
+              <LazyGlobe />
+              <div className="globe-hint"><span /> Drag to explore the network</div>
+            </ScrollReveal>
+          </div>
+        </section>
+
         <section className="section section-light process-section" id="process">
           <div className="container">
             <ScrollReveal className="section-heading center-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> SIMPLE BY DESIGN</div><h2>Your next move,<br /><em>handled.</em></h2><p>One clear partner from the first call to the final proof of delivery.</p></ScrollReveal>
@@ -700,7 +808,7 @@ function Home() {
       <footer className="site-footer">
         <div className="container footer-top">
           <div className="footer-brand"><BrandMark /><p>Freight dispatching for owner-operators and small fleets who want a clearer road ahead.</p></div>
-          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#process">How it works</a><a href="#advantage">Why us</a></div>
+          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#coverage">Coverage</a><a href="#process">How it works</a><a href="#advantage">Why us</a></div>
           <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={SITE_URL}>americanlogistics.online</a></div>
         </div>
         <div className="container footer-bottom"><span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div>
