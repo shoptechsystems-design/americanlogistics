@@ -5,6 +5,12 @@ import {
   BadgeCheck,
   Box,
   ChevronDown,
+  ClipboardList,
+  Receipt,
+  Sprout,
+  Building2,
+  MapPinned,
+  PhoneCall,
   CircleCheck,
   Clock3,
   FileCheck2,
@@ -28,6 +34,31 @@ import {
 const PHONE = "+1 (817) 678-4346";
 const PHONE_DIGITS = "+18176784346";
 const EMAIL = "Dispatch5services@gmail.com";
+const SITE_URL = "https://americanlogistics.online";
+
+const stats = [
+  { value: "24/7", label: "Live dispatch desk" },
+  { value: "5+", label: "Equipment types dispatched" },
+  { value: "48", label: "Lower-48 states covered" },
+  { value: "1:1", label: "A real dispatcher on your account" },
+];
+
+const scope = [
+  { icon: MapPinned, title: "Load sourcing", copy: "We search boards and broker relationships for freight that matches your equipment, lanes and home time." },
+  { icon: Handshake, title: "Rate negotiation", copy: "We negotiate every rate so your truck is paid what the lane is worth, not the first number offered." },
+  { icon: PhoneCall, title: "Broker communication", copy: "Calls, emails and follow-ups with brokers and shippers are on us, so you can focus on driving." },
+  { icon: ClipboardList, title: "Rate confirmations", copy: "We review terms, confirm details and make sure what was promised is what is on paper." },
+  { icon: RadioTower, title: "Check calls & updates", copy: "We keep brokers informed and flag delays early, so nobody has to chase you for a status." },
+  { icon: Receipt, title: "Invoicing support", copy: "We help get paperwork and proof of delivery organised so billing is quick and clean." },
+  { icon: RouteIcon, title: "Route & trip planning", copy: "We plan the next load before the current one ends to cut deadhead and idle time." },
+  { icon: ShieldCheck, title: "Problem solving", copy: "Detention, breakdowns, reschedules — you have someone to call when plans change." },
+];
+
+const audiences = [
+  { icon: Truck, title: "Owner-operators", copy: "One truck, your rules. We handle the office work so you can stay on the road and earn." },
+  { icon: Building2, title: "Small fleets", copy: "Growing past one truck? We help you keep every unit moving without hiring a full dispatch team." },
+  { icon: Sprout, title: "New authorities", copy: "Just got your MC? We help you get started with the right brokers and lanes from day one." },
+];
 
 const services = [
   { icon: Box, title: "Box Trucks", copy: "Flexible regional and last-mile freight matched to your equipment." },
@@ -58,8 +89,12 @@ const testimonials = [
 
 const faqs = [
   { question: "What equipment do you dispatch?", answer: "We work with box trucks, dry vans, reefers, flatbeds, hotshots, and other owner-operator setups. Tell us what you run and where you want to operate." },
+  { question: "How much does dispatching cost?", answer: "We explain our pricing clearly on the first call, before you commit to anything. Ask us about it and we will walk you through exactly how it works." },
   { question: "Do I have to run full-time?", answer: "No. We build around your availability, preferred home time, and the lanes that fit your business." },
+  { question: "Can you work with a brand-new MC authority?", answer: "Yes. New carriers are welcome. We will talk through your setup and help you plan a realistic start with the right freight and brokers." },
+  { question: "What do I need to get started?", answer: "Typically your MC and DOT numbers, certificate of insurance, W-9, and basic details about your truck and preferred lanes. We will tell you exactly what is needed on the call." },
   { question: "How does the first conversation work?", answer: "We start with a quick, low-pressure call to understand your equipment and goals. From there, we can outline what a dispatch partnership could look like." },
+  { question: "Which areas do you cover?", answer: "We dispatch across the lower 48 states. Tell us your home base and preferred lanes and we will build around them." },
 ];
 
 const equipmentProfiles = [
@@ -388,6 +423,8 @@ function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [formError, setFormError] = useState("");
   const [activeSection, setActiveSection] = useState("services");
   const heroSceneRef = useRef<HTMLDivElement>(null);
 
@@ -405,9 +442,32 @@ function Home() {
     return () => observer.disconnect();
   }, []);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    if (data.website) return; // honeypot: bots fill this, people never see it
+
+    const endpoint = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
+    if (!endpoint) {
+      const body = [`Name: ${data.name}`, `Company: ${data.company || "-"}`, `Phone: ${data.phone}`, `Email: ${data.email}`, `Truck type: ${data.truckType || "-"}`, `MC number: ${data.mc || "-"}`, "", data.message || ""].join("\n");
+      window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(`Dispatch request from ${data.name}`)}&body=${encodeURIComponent(body)}`;
+      setSubmitted(true);
+      return;
+    }
+
+    setSending(true);
+    setFormError("");
+    try {
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ ...data, source: SITE_URL }) });
+      if (!response.ok) throw new Error(String(response.status));
+      form.reset();
+      setSubmitted(true);
+    } catch {
+      setFormError(`Something went wrong sending your request. Please call ${PHONE} or email ${EMAIL}.`);
+    } finally {
+      setSending(false);
+    }
   };
 
   const closeMenu = () => setMobileOpen(false);
@@ -532,6 +592,12 @@ function Home() {
           </div>
         </section>
 
+        <section className="stats-strip" aria-label="American Logistics at a glance">
+          <div className="container stats-grid">
+            {stats.map((stat) => <div className="stat" key={stat.label}><strong>{stat.value}</strong><span>{stat.label}</span></div>)}
+          </div>
+        </section>
+
         <section className="section section-light" id="services">
           <div className="container">
             <div className="section-heading split-heading">
@@ -564,6 +630,24 @@ function Home() {
               <div className="benefit-intro"><div className="big-number">24<span>/</span>7</div><p>Support that stays awake when the road does.</p><div className="signal-bars"><i /><i /><i /><i /><i /></div><small>LIVE DISPATCH SIGNAL</small></div>
               <div className="benefit-grid">
                 {benefits.map((benefit) => { const Icon = benefit.icon; return <article className="benefit-item" key={benefit.title}><div className="benefit-icon"><Icon size={19} /></div><div><h3>{benefit.title}</h3><p>{benefit.copy}</p></div></article>; })}
+              </div>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        <section className="section section-sand scope-section" id="scope">
+          <div className="container">
+            <ScrollReveal className="section-heading split-heading">
+              <div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHAT WE HANDLE</div><h2>Everything between<br /><em>booked and paid.</em></h2></div>
+              <div className="heading-side"><p>One dispatch desk covering the calls, paperwork and planning that eat your day.</p><a className="text-link dark-link" href="#contact">Get started <ArrowRight size={16} /></a></div>
+            </ScrollReveal>
+            <ScrollReveal className="scope-grid" delay={80}>
+              {scope.map((item) => { const Icon = item.icon; return <article className="scope-item" key={item.title}><span className="scope-icon"><Icon size={20} strokeWidth={1.6} /></span><h3>{item.title}</h3><p>{item.copy}</p></article>; })}
+            </ScrollReveal>
+            <ScrollReveal className="audience-block" delay={120}>
+              <div className="audience-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHO WE WORK WITH</div><h3>Built for carriers of every size.</h3></div>
+              <div className="audience-grid">
+                {audiences.map((item) => { const Icon = item.icon; return <article className="audience-card" key={item.title}><Icon size={22} strokeWidth={1.5} /><h4>{item.title}</h4><p>{item.copy}</p></article>; })}
               </div>
             </ScrollReveal>
           </div>
@@ -608,12 +692,24 @@ function Home() {
         <section className="section contact-section" id="contact">
           <div className="container contact-layout">
             <ScrollReveal className="contact-copy"><div className="eyebrow"><span className="eyebrow-line" /> READY WHEN YOU ARE</div><h2>Put your truck<br /><em>in motion.</em></h2><p>Tell us a little about your operation. We will come back with a clear next step — not a hard sell.</p><div className="contact-details"><a href={`tel:${PHONE_DIGITS}`}><span><Phone size={17} /></span><div><small>CALL THE DISPATCH DESK</small><strong>{PHONE}</strong></div></a><a href={`mailto:${EMAIL}`}><span><Mail size={17} /></span><div><small>EMAIL THE TEAM</small><strong>{EMAIL}</strong></div></a></div></ScrollReveal>
-            <ScrollReveal className="lead-form-wrap" delay={120}>{submitted ? <div className="form-success"><div className="success-icon"><CircleCheck size={30} /></div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> REQUEST RECEIVED</div><h3>You're on the radar.</h3><p>Thanks for reaching out. An American Logistics team member will connect with you soon. If you need us now, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p><button className="button button-dark" onClick={() => setSubmitted(false)}>Send another request <ArrowRight size={16} /></button></div> : <form className="lead-form" onSubmit={handleSubmit}><div className="form-heading"><span>01</span><div><small>START A CONVERSATION</small><h3>Let's talk trucks.</h3></div></div><div className="form-row"><label>Full name<input required name="name" placeholder="Your name" /></label><label>Company<input name="company" placeholder="Company name" /></label></div><div className="form-row"><label>Phone<input required type="tel" name="phone" placeholder="(000) 000-0000" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label></div><div className="form-row"><label>Truck type<select name="truckType" defaultValue=""><option value="" disabled>Select equipment</option><option>Box truck</option><option>Dry van</option><option>Reefer</option><option>Flatbed</option><option>Hotshot</option><option>Other</option></select></label><label>MC number<input name="mc" placeholder="Optional" /></label></div><label>What are you looking for?<textarea name="message" placeholder="Tell us about your lanes, home time, or what is not working today..." rows={3} /></label><button className="button button-amber button-submit" type="submit">Get my dispatch options <ArrowUpRight size={17} /></button><small className="form-note">By submitting, you are asking American Logistics to contact you about dispatch support.</small></form>}</ScrollReveal>
+            <ScrollReveal className="lead-form-wrap" delay={120}>{submitted ? <div className="form-success"><div className="success-icon"><CircleCheck size={30} /></div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> REQUEST RECEIVED</div><h3>You're on the radar.</h3><p>Thanks for reaching out. An American Logistics team member will connect with you soon. If you need us now, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p><button className="button button-dark" onClick={() => setSubmitted(false)}>Send another request <ArrowRight size={16} /></button></div> : <form className="lead-form" onSubmit={handleSubmit}><div className="form-heading"><span>01</span><div><small>START A CONVERSATION</small><h3>Let's talk trucks.</h3></div></div><div className="form-row"><label>Full name<input required name="name" placeholder="Your name" /></label><label>Company<input name="company" placeholder="Company name" /></label></div><div className="form-row"><label>Phone<input required type="tel" name="phone" placeholder="(000) 000-0000" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label></div><div className="form-row"><label>Truck type<select name="truckType" defaultValue=""><option value="" disabled>Select equipment</option><option>Box truck</option><option>Dry van</option><option>Reefer</option><option>Flatbed</option><option>Hotshot</option><option>Other</option></select></label><label>MC number<input name="mc" placeholder="Optional" /></label></div><label>What are you looking for?<textarea name="message" placeholder="Tell us about your lanes, home time, or what is not working today..." rows={3} /></label><input className="hp-field" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />{formError && <p className="form-error" role="alert">{formError}</p>}<button className="button button-amber button-submit" type="submit" disabled={sending}>{sending ? "Sending…" : "Get my dispatch options"} <ArrowUpRight size={17} /></button><small className="form-note">By submitting, you are asking American Logistics to contact you about dispatch support.</small></form>}</ScrollReveal>
           </div>
         </section>
       </main>
 
-      <footer className="site-footer"><div className="container footer-top"><BrandMark /><p>Freight dispatching for owner-operators who want a clearer road ahead.</p><div className="footer-links"><a href="#services">Services</a><a href="#advantage">Why us</a><a href="#contact">Contact</a></div></div><div className="container footer-bottom"><span>© 2026 American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div></footer>
+      <footer className="site-footer">
+        <div className="container footer-top">
+          <div className="footer-brand"><BrandMark /><p>Freight dispatching for owner-operators and small fleets who want a clearer road ahead.</p></div>
+          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#process">How it works</a><a href="#advantage">Why us</a></div>
+          <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={SITE_URL}>americanlogistics.online</a></div>
+        </div>
+        <div className="container footer-bottom"><span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div>
+      </footer>
+
+      <div className="mobile-cta" role="region" aria-label="Quick contact">
+        <a className="mobile-cta-call" href={`tel:${PHONE_DIGITS}`}><Phone size={17} /> Call now</a>
+        <a className="mobile-cta-quote" href="#contact">Get started <ArrowUpRight size={16} /></a>
+      </div>
     </div>
   );
 }

@@ -411,3 +411,78 @@ img, svg, video { max-width: 100%; }
   .top-strip-inner > span:nth-of-type(4) { display: none; }
 }
 @media (min-width: 721px) and (max-width: 1100px) { .hero-visual { margin-left: -90px; } }
+
+/* ---- Stats strip ---- */
+html { scroll-padding-top: 110px; }
+.stats-strip { background: #0b1117; border-bottom: 1px solid rgba(255,255,255,.08); }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+.stat { padding: 34px 24px; border-left: 1px solid rgba(255,255,255,.09); display: flex; flex-direction: column; gap: 8px; }
+.stat:first-child { border-left: 0; padding-left: 0; }
+.stat strong { font-family: "Space Grotesk", sans-serif; font-size: clamp(34px, 4vw, 52px); line-height: 1; font-weight: 700; color: #e9a63b; letter-spacing: -.03em; }
+.stat span { color: #9aa6a7; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+
+/* ---- Scope + audiences ---- */
+.scope-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(24,32,36,.18); border: 1px solid rgba(24,32,36,.18); margin-top: 64px; }
+.scope-item { background: #dccdb2; padding: 28px 24px 30px; transition: background .2s ease; }
+.scope-item:hover { background: #e6d9c0; }
+.scope-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1px solid rgba(24,32,36,.3); color: #8a5a0f; margin-bottom: 38px; }
+.scope-item h3 { font-size: 17px; margin: 0 0 10px; }
+.scope-item p { margin: 0; font-size: 12.5px; line-height: 1.6; color: #3c464a; }
+.audience-block { margin-top: 90px; }
+.audience-heading h3 { font-size: clamp(30px, 3.4vw, 44px); margin: 18px 0 0; letter-spacing: -.04em; }
+.audience-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; }
+.audience-card { background: #10161c; color: #f6f3eb; padding: 30px 26px 32px; }
+.audience-card svg { color: #e9a63b; }
+.audience-card h4 { font-size: 20px; margin: 22px 0 10px; }
+.audience-card p { margin: 0; font-size: 13px; line-height: 1.6; color: #9aa6a7; }
+
+/* ---- Footer ---- */
+.footer-top { grid-template-columns: 1.4fr 1fr 1fr; align-items: start; gap: 40px; }
+.footer-brand p { margin: 20px 0 0; max-width: 340px; color: #8f999a; font-size: 13px; line-height: 1.6; }
+.footer-col { display: flex; flex-direction: column; gap: 12px; }
+.footer-col h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #e9a63b; }
+.footer-col a { color: #cfd8d4; text-decoration: none; font-size: 13px; overflow-wrap: anywhere; }
+.footer-col a:hover { color: #e9a63b; }
+
+/* ---- Form states ---- */
+.hp-field { position: absolute !important; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.form-error { margin: 0; padding: 10px 12px; background: #fbe9e6; color: #8a2417; border: 1px solid #e6b3ab; font-size: 12px; line-height: 1.5; }
+.button:disabled { opacity: .65; cursor: progress; }
+.lead-form input:user-invalid, .lead-form select:user-invalid { border-color: #c4452f; }
+
+/* ---- Mobile call bar ---- */
+.mobile-cta { display: none; }
+
+/* ---- Accessibility ---- */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #e9a63b; outline-offset: 3px; }
+
+@media (max-width: 980px) {
+  .scope-grid { grid-template-columns: repeat(2, 1fr); }
+  .audience-grid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr 1fr; }
+  .footer-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stat { padding: 24px 16px; border-left: 0; border-top: 1px solid rgba(255,255,255,.09); }
+  .stat:nth-child(-n+2) { border-top: 0; }
+  .stat:nth-child(odd) { padding-left: 0; }
+  .stat:nth-child(even) { border-left: 1px solid rgba(255,255,255,.09); }
+  .scope-grid { grid-template-columns: 1fr; margin-top: 44px; }
+  .scope-icon { margin-bottom: 24px; }
+  .audience-block { margin-top: 64px; }
+  .footer-top { display: grid; grid-template-columns: 1fr 1fr; gap: 32px 20px; }
+  .mobile-cta { position: fixed; z-index: 60; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: rgba(9,12,16,.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,.12); }
+  .mobile-cta a { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; font-size: 13px; font-weight: 800; text-decoration: none; }
+  .mobile-cta-call { color: #f6f3eb; border: 1px solid rgba(255,255,255,.25); }
+  .mobile-cta-quote { background: #e9a63b; color: #151006; }
+  .site-footer { padding-bottom: 72px; }
+}
+
+/* ---- Polish pass ---- */
+.stats-strip { padding-top: 26px; }
+.scope-section .heading-side p { color: #3c464a; }
+@media (max-width: 720px) {
+  .footer-col:last-child { grid-column: 1 / -1; }
+  .footer-col a { overflow-wrap: normal; word-break: normal; }
+}
