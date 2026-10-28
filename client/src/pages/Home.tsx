@@ -221,245 +221,11 @@ function FreightFit() {
           {equipmentProfiles.map((profile) => { const Icon = profile.icon; return <button key={profile.key} className={activeKey === profile.key ? "is-active" : ""} role="tab" aria-selected={activeKey === profile.key} onClick={() => setActiveKey(profile.key)}><span className="freight-tab-number">{profile.number}</span><Icon size={17} /><span>{profile.label}</span><ArrowUpRight size={14} /></button>; })}
         </div>
         <div className="freight-fit-detail" role="tabpanel">
-          <div className="freight-route-art"><div className="freight-route-grid" /><div className="freight-route-scan" /><div className="freight-route-stars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><svg key={active.key} className="freight-route-map" viewBox="0 0 460 300" preserveAspectRatio="none" aria-hidden="true"><path className="freight-route-map-shadow" d={active.route.d} /><path className="freight-route-map-base" d={active.route.d} /><path className="freight-route-map-flow" d={active.route.d} /><g className="freight-route-runner"><circle className="freight-route-runner-trail" r="8"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} begin="-1.6s" /></circle><circle className="freight-route-runner-core" r="4"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} rotate="auto" /></circle></g>{active.route.stops.map((stop, index) => <circle key={`${active.key}-${index}`} className={`freight-route-waypoint waypoint-${index}`} cx={stop.x} cy={stop.y} r={index === 0 || index === active.route.stops.length - 1 ? 4 : 3} />)}</svg>{active.route.stops.map((stop, index) => <button key={`${active.key}-stop-${stop.city}`} className={`freight-route-stop ${selectedStop === index ? "is-selected" : ""}`} style={{ "--stop-x": `${stop.x / 4.6}%`, "--stop-y": `${stop.y / 3}%` } as CSSProperties} aria-label={`Show ${stop.city} lane stop details`} aria-pressed={selectedStop === index} onClick={() => setSelectedStop(selectedStop === index ? null : index)}><span /></button>)}{selectedStopData && <div className={`freight-route-stop-card placement-${selectedStopPlacement}`} role="dialog" aria-label={`${selectedStopData.city} freight details`} style={{ "--stop-x": `${selectedStopData.x / 4.6}%`, "--stop-y": `${selectedStopData.y / 3}%` } as CSSProperties}><div><small>LANE STOP</small><strong>{selectedStopData.city}</strong></div><button type="button" aria-label="Close lane stop details" onClick={() => setSelectedStop(null)}><X size={13} /></button><p><b>{selectedStopData.freight}</b>{selectedStopData.detail}</p></div>}<div className="freight-route-route-label route-label-one">PICKUP <b>{active.route.pickup}</b></div><div className="freight-route-route-label route-label-two">DESTINATION <b>{active.route.destination}</b></div><div className="freight-route-node freight-route-node-start"><b>ORIGIN</b><span>READY</span></div><div className="freight-route-node freight-route-node-end"><b>NEXT LOAD</b><span>IN VIEW</span></div><div className="freight-route-truck"><span className="freight-truck-shadow" /><ActiveIcon size={27} strokeWidth={1.2} /><i className="freight-truck-beacon" /></div><div className="freight-route-telemetry"><span><b>LIVE ROUTE</b><strong>98.6%</strong></span><span><b>ETA</b><strong>04:18</strong></span><span><b>STATUS</b><strong>READY</strong></span></div><div className="freight-route-cargo"><span className="cargo-bar cargo-bar-one" /><span className="cargo-bar cargo-bar-two" /><span className="cargo-bar cargo-bar-three" /><b>{active.label.toUpperCase()}</b></div></div>
+          <div className="freight-route-art"><div className="freight-route-grid" /><div className="freight-route-scan" /><div className="freight-route-stars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><svg key={active.key} className="freight-route-map" viewBox="0 0 460 300" preserveAspectRatio="none" aria-hidden="true"><path className="freight-route-map-shadow" d={active.route.d} /><path className="freight-route-map-base" d={active.route.d} /><path className="freight-route-map-flow" d={active.route.d} /><g className="freight-route-runner"><circle className="freight-route-runner-trail" r="8"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} begin="-1.6s" /></circle><circle className="freight-route-runner-core" r="4"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} rotate="auto" /></circle></g>{active.route.stops.map((stop, index) => <circle key={`${active.key}-${index}`} className={`freight-route-waypoint waypoint-${index}`} cx={stop.x} cy={stop.y} r={index === 0 || index === active.route.stops.length - 1 ? 4 : 3} />)}</svg>{active.route.stops.map((stop, index) => <button key={`${active.key}-stop-${stop.city}`} className={`freight-route-stop ${selectedStop === index ? "is-selected" : ""}`} style={{ "--stop-x": `${stop.x / 4.6}%`, "--stop-y": `${stop.y / 3}%` } as CSSProperties} aria-label={`Show ${stop.city} lane stop details`} aria-pressed={selectedStop === index} onClick={() => setSelectedStop(selectedStop === index ? null : index)}><span /></button>)}{selectedStopData && <div className={`freight-route-stop-card placement-${selectedStopPlacement}`} role="dialog" aria-label={`${selectedStopData.city} freight details`} style={{ "--stop-x": `${selectedStopData.x / 4.6}%`, "--stop-y": `${selectedStopData.y / 3}%` } as CSSProperties}><div><small>LANE STOP</small><strong>{selectedStopData.city}</strong></div><button type="button" aria-label="Close lane stop details" onClick={() => setSelectedStop(null)}><X size={13} /></button><p><b>{selectedStopData.freight}</b>{selectedStopData.detail}</p></div>}<div className="freight-route-route-label route-label-one">PICKUP <b>{active.route.pickup}</b></div><div className="freight-route-route-label route-label-two">DESTINATION <b>{active.route.destination}</b></div><div className="freight-route-node freight-route-node-start"><b>ORIGIN</b><span>READY</span></div><div className="freight-route-node freight-route-node-end"><b>NEXT LOAD</b><span>IN VIEW</span></div><div className="freight-route-truck"><span className="freight-truck-shadow" /><ActiveIcon size={27} strokeWidth={1.2} /><i className="freight-truck-beacon" /></div><div className="freight-route-telemetry"><span><b>BEST FOR</b><strong>{active.bestFor}</strong></span><span><b>EQUIPMENT</b><strong>{active.label}</strong></span><span><b>STATUS</b><strong>READY</strong></span></div><div className="freight-route-cargo"><span className="cargo-bar cargo-bar-one" /><span className="cargo-bar cargo-bar-two" /><span className="cargo-bar cargo-bar-three" /><b>{active.label.toUpperCase()}</b></div></div>
           <div className="freight-fit-copy"><div className="freight-fit-kicker"><span className="live-dot" /> CURRENT PROFILE <b>{active.number} / 04</b></div><div className="freight-fit-title"><ActiveIcon size={23} /><h3>{active.label}</h3></div><p>{active.dispatch}</p><div className="freight-fit-facts"><div><small>BEST FOR</small><strong>{active.bestFor}</strong></div><div><small>LANE EXAMPLES</small><strong>{active.lanes}</strong></div></div><a className="button button-amber" href="#contact">Build my {active.label.toLowerCase()} plan <ArrowUpRight size={16} /></a></div>
         </div>
       </div>
       <div className="freight-fit-service-area"><span>SERVICE AREA</span><strong>U.S. carrier support</strong><i /><span>LOCAL · REGIONAL · OTR</span><b>Dallas</b><b>Atlanta</b><b>Houston</b><b>Oklahoma City</b><b>Beyond</b></div>
-    </div>
-  </section>;
-}
-
-function LoadToLaunch() {
-  const [journeyStep, setJourneyStep] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-    const sectionObserver = new IntersectionObserver(([entry]) => setIsActive(entry.isIntersecting), { rootMargin: "300px 0px 300px 0px" });
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target instanceof HTMLElement) setJourneyStep(Number(visible.target.dataset.step ?? 0));
-    }, { threshold: [0.25, 0.55], rootMargin: "-35% 0px -42% 0px" });
-
-    sectionObserver.observe(section);
-    stepRefs.current.filter(Boolean).forEach((step) => observer.observe(step as HTMLDivElement));
-    return () => { sectionObserver.disconnect(); observer.disconnect(); };
-  }, []);
-
-  return <section className={`journey-section ${isActive ? "is-active" : ""}`} id="journey" ref={sectionRef}>
-    <div className="container journey-layout">
-      <div className={`journey-visual journey-step-${journeyStep}`} aria-label="Scroll-driven dispatch journey illustration">
-        <div className="journey-label"><span className="live-dot" /> LIVE LOAD JOURNEY <b>03 / 03</b></div>
-        <div className="journey-horizon" />
-        <div className="journey-city-lights" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div>
-        <div className="journey-road"><i /><i /><i /><i /><i /></div>
-        <div className="journey-route-line" />
-        <div className="journey-road-sign journey-road-sign-one" aria-hidden="true"><b>ATLANTA</b><span>I-20 E</span></div>
-        <div className="journey-road-sign journey-road-sign-two" aria-hidden="true"><b>EXIT 18</b><span>REST AREA</span></div>
-        <div className="journey-distant-truck" aria-hidden="true"><span /><b>AL</b><i /><i /></div>
-        <div className="journey-background-truck" aria-hidden="true"><span className="background-truck-cab" /><span className="background-truck-trailer"><b>AL</b></span><i className="background-wheel-one" /><i className="background-wheel-two" /><em className="background-taillight-one" /><em className="background-taillight-two" /></div>
-        <div className="journey-truck"><div className="journey-cab"><span /><i className="journey-headlight journey-headlight-one" /><i className="journey-headlight journey-headlight-two" /></div><div className="journey-trailer"><b>AL</b><div className="cargo cargo-one" /><div className="cargo cargo-two" /><div className="cargo cargo-three" /></div><i className="journey-wheel journey-wheel-one" /><i className="journey-wheel journey-wheel-two" /><i className="journey-wheel journey-wheel-three" /><em className="journey-taillight journey-taillight-one" /><em className="journey-taillight journey-taillight-two" /></div>
-        <div className="journey-status"><small>{journeyStep === 0 ? "LOAD ACCEPTED" : journeyStep === 1 ? "CARGO SECURED" : "IN TRANSIT"}</small><strong>{journeyStep === 0 ? "Finding the right fit" : journeyStep === 1 ? "Ready to roll" : "Moving toward Atlanta"}</strong></div>
-        <div className="journey-node journey-node-start">DALLAS</div><div className="journey-node journey-node-end">ATLANTA</div>
-      </div>
-      <div className="journey-copy">
-        <ScrollReveal><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> FROM LOAD TO LAUNCH</div><h2>Watch the next move<br /><em>come together.</em></h2><p>Scroll through a typical dispatch moment. We find the opportunity, get the details locked, and keep your truck moving.</p></ScrollReveal>
-        <div className="journey-steps">
-          {[
-            ["01", "Load accepted", "We match the right freight to your equipment, lane, and schedule."],
-            ["02", "Cargo secured", "Rates, broker communication, and paperwork get handled before wheels roll."],
-            ["03", "Rolling out", "You have the plan, the updates, and a dispatch desk still watching the road."],
-          ].map(([number, title, copy], index) => <div className={`journey-step ${journeyStep === index ? "journey-step-active" : ""}`} data-step={index} ref={(element) => { stepRefs.current[index] = element; }} key={number}><span>{number}</span><div><h3>{title}</h3><p>{copy}</p></div><ArrowUpRight size={16} /></div>)}
-        </div>
-      </div>
-    </div>
-  </section>;
-}
-
-function NightRun() {
-  const sceneRef = useRef<HTMLElement>(null);
-  const [runProgress, setRunProgress] = useState(0);
-  const [isDay, setIsDay] = useState(false);
-  const [weather, setWeather] = useState<"clear" | "rain" | "fog">("clear");
-  const [isSoundOn, setIsSoundOn] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const activeRef = useRef(false);
-  const audioRef = useRef<{ context: AudioContext; master: GainNode; ambience?: { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode }; driving?: { engine: OscillatorNode; engineGain: GainNode; tireSource: AudioBufferSourceNode; tireGain: GainNode }; thunderTimer?: number } | null>(null);
-
-  const stopWeatherAudio = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (audio.thunderTimer) window.clearTimeout(audio.thunderTimer);
-    audio.ambience?.source.stop();
-    audio.ambience = undefined;
-    audio.thunderTimer = undefined;
-  };
-
-  const stopDrivingAudio = () => {
-    const audio = audioRef.current;
-    if (!audio?.driving) return;
-    audio.driving.engine.stop();
-    audio.driving.tireSource.stop();
-    audio.driving = undefined;
-  };
-
-  const updateDrivingAudio = (progress: number) => {
-    const audio = audioRef.current;
-    if (!audio?.driving || audio.context.state !== "running") return;
-    const now = audio.context.currentTime;
-    const speed = Math.max(0, Math.min(1, progress));
-    audio.driving.engine.frequency.setTargetAtTime(48 + speed * 22, now, 0.12);
-    audio.driving.engineGain.gain.setTargetAtTime(0.025 + speed * 0.04, now, 0.16);
-    audio.driving.tireGain.gain.setTargetAtTime(0.004 + speed * 0.028, now, 0.18);
-  };
-
-  const startDrivingAudio = () => {
-    const audio = audioRef.current;
-    if (!audio || audio.driving) return;
-    const { context, master } = audio;
-    const now = context.currentTime;
-    const engine = context.createOscillator();
-    const engineFilter = context.createBiquadFilter();
-    const engineGain = context.createGain();
-    engine.type = "sawtooth";
-    engine.frequency.value = 48;
-    engineFilter.type = "lowpass";
-    engineFilter.frequency.value = 180;
-    engineFilter.Q.value = 0.7;
-    engineGain.gain.value = 0.025;
-    engine.connect(engineFilter).connect(engineGain).connect(master);
-
-    const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let index = 0; index < data.length; index += 1) data[index] = Math.random() * 2 - 1;
-    const tireSource = context.createBufferSource();
-    const tireFilter = context.createBiquadFilter();
-    const tireGain = context.createGain();
-    tireSource.buffer = buffer;
-    tireSource.loop = true;
-    tireFilter.type = "bandpass";
-    tireFilter.frequency.value = 520;
-    tireFilter.Q.value = 0.45;
-    tireGain.gain.value = 0.004;
-    tireSource.connect(tireFilter).connect(tireGain).connect(master);
-    engine.start(now);
-    tireSource.start(now);
-    audio.driving = { engine, engineGain, tireSource, tireGain };
-    updateDrivingAudio(runProgress);
-  };
-
-  const playThunder = () => {
-    const audio = audioRef.current;
-    if (!audio || audio.context.state !== "running") return;
-    const now = audio.context.currentTime;
-    const osc = audio.context.createOscillator();
-    const gain = audio.context.createGain();
-    const filter = audio.context.createBiquadFilter();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(78, now);
-    osc.frequency.exponentialRampToValueAtTime(34, now + 1.8);
-    filter.type = "lowpass";
-    filter.frequency.value = 230;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
-    osc.connect(filter).connect(gain).connect(audio.master);
-    osc.start(now);
-    osc.stop(now + 2.3);
-  };
-
-  const startWeatherAudio = (mode: "clear" | "rain" | "fog") => {
-    if (!isSoundOn) return;
-    const audio = audioRef.current;
-    if (!audio) return;
-    stopWeatherAudio();
-    if (mode === "clear") return;
-    const { context, master } = audio;
-    const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let index = 0; index < data.length; index += 1) data[index] = Math.random() * 2 - 1;
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    source.buffer = buffer;
-    source.loop = true;
-    filter.type = mode === "rain" ? "lowpass" : "bandpass";
-    filter.frequency.value = mode === "rain" ? 1250 : 420;
-    filter.Q.value = mode === "rain" ? 0.45 : 0.7;
-    gain.gain.value = mode === "rain" ? 0.055 : 0.035;
-    source.connect(filter).connect(gain).connect(master);
-    source.start();
-    audio.ambience = { source, filter, gain };
-    if (mode === "fog") {
-      const scheduleThunder = () => {
-        if (!audioRef.current || !isSoundOn || mode !== "fog") return;
-        playThunder();
-        audio.thunderTimer = window.setTimeout(scheduleThunder, 9000 + Math.random() * 9000);
-      };
-      audio.thunderTimer = window.setTimeout(scheduleThunder, 4500 + Math.random() * 5000);
-    }
-  };
-
-  const toggleWeatherSound = () => {
-    if (isSoundOn) {
-      stopWeatherAudio();
-      stopDrivingAudio();
-      audioRef.current?.master.gain.setTargetAtTime(0, audioRef.current.context.currentTime, 0.08);
-      audioRef.current?.master.disconnect();
-      setIsSoundOn(false);
-      return;
-    }
-    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const context = audioRef.current?.context ?? new AudioContextClass();
-    const master = audioRef.current?.master ?? context.createGain();
-    master.gain.setTargetAtTime(0.7, context.currentTime, 0.08);
-    master.connect(context.destination);
-    audioRef.current = { context, master };
-    void context.resume().then(() => { setIsSoundOn(true); startDrivingAudio(); startWeatherAudio(weather); });
-  };
-
-  useEffect(() => () => { stopWeatherAudio(); stopDrivingAudio(); audioRef.current?.context.close(); audioRef.current = null; }, []);
-
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    const sectionObserver = new IntersectionObserver(([entry]) => {
-      activeRef.current = entry.isIntersecting;
-      setIsActive(entry.isIntersecting);
-      if (entry.isIntersecting) updateProgress();
-    }, { rootMargin: "300px 0px 300px 0px" });
-    const updateProgress = () => {
-      if (!activeRef.current) return;
-      const start = scene.offsetTop - window.innerHeight * 0.72;
-      const end = scene.offsetTop + scene.offsetHeight - window.innerHeight * 0.28;
-      const nextProgress = Math.max(0, Math.min(1, (window.scrollY - start) / Math.max(1, end - start)));
-      setRunProgress(nextProgress);
-      updateDrivingAudio(nextProgress);
-    };
-    sectionObserver.observe(scene);
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress);
-    return () => { sectionObserver.disconnect(); window.removeEventListener("scroll", updateProgress); window.removeEventListener("resize", updateProgress); };
-  }, []);
-
-  return <section className={`night-run-section ${isActive ? "is-active" : ""}`} id="night-run" ref={sceneRef}>
-    <div className="container night-run-layout">
-      <div className="night-run-copy"><ScrollReveal><div className="eyebrow"><span className="eyebrow-line" /> THE ROAD DOESN'T CLOCK OUT</div><h2>Some loads move<br /><em>after dark.</em></h2><p>Scroll to send the truck into the night. Headlights lead the lane, markers streak by, and the dispatch desk stays close until the wheels stop.</p><div className="night-run-readout"><span>RUN STATUS</span><strong>{runProgress < .32 ? "PULLING OUT" : runProgress < .7 ? "IN MOTION" : "LIGHTS AHEAD"}</strong><i><b style={{ width: `${Math.max(8, runProgress * 100)}%` }} /></i></div></ScrollReveal></div>
-      <div className={`night-run-scene ${isDay ? "night-run-day" : ""} condition-${weather}`} style={{ "--night-progress": runProgress } as CSSProperties} aria-label={`${isDay ? "Daytime" : "Nighttime"} ${weather} truck journey scene`}>
-        <div className="night-run-controls"><button className="lighting-toggle" type="button" onClick={() => setIsDay((current) => !current)} aria-pressed={isDay}><span className="lighting-toggle-icon">{isDay ? "☀" : "☾"}</span><span>{isDay ? "Day view" : "Night view"}</span><i><b /></i></button><div className="weather-control-row"><div className="weather-toggle" role="group" aria-label="Weather conditions">{(["clear", "rain", "fog"] as const).map((mode) => <button key={mode} className={weather === mode ? "is-selected" : ""} type="button" onClick={() => { setWeather(mode); if (isSoundOn) startWeatherAudio(mode); }} aria-pressed={weather === mode}>{mode === "clear" ? "Clear" : mode === "rain" ? "Rain" : "Fog"}</button>)}</div><button className={`weather-sound-toggle ${isSoundOn ? "is-on" : ""}`} type="button" onClick={toggleWeatherSound} aria-pressed={isSoundOn} aria-label={isSoundOn ? "Mute weather sounds" : "Play weather sounds"} title={isSoundOn ? "Mute weather sounds" : "Play weather sounds"}>{isSoundOn ? <Volume2 size={12} /> : <VolumeX size={12} />}</button></div></div>
-        <div className="weather-rain-layer" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} />)}</div><div className="weather-fog weather-fog-one" aria-hidden="true" /><div className="weather-fog weather-fog-two" aria-hidden="true" />
-        <div className="night-moon" /><div className="night-city"><i /><i /><i /><i /><i /><i /><i /><i /></div>
-        <div className="night-lamp night-lamp-one"><i /></div><div className="night-lamp night-lamp-two"><i /></div><div className="night-lamp night-lamp-three"><i /></div>
-        <div className="night-road"><span /><span /><span /><span /><span /><span /></div>
-        <div className="night-truck"><div className="night-truck-cab"><i className="night-beam beam-one" /><i className="night-beam beam-two" /><b className="night-lamp-glow" /></div><div className="night-truck-box"><b>AL</b><span /></div><i className="night-wheel one" /><i className="night-wheel two" /><i className="night-redlight" /></div>
-        <div className="night-mile-marker"><small>TX 20</small><b>WEST</b></div>
-        <div className="night-run-caption"><span className="live-dot" /> LIVE ROAD VIEW <b>{String(Math.round(runProgress * 100)).padStart(2, "0")}%</b></div>
-      </div>
     </div>
   </section>;
 }
@@ -473,10 +239,9 @@ function Home() {
   const progressRef = useRef<HTMLDivElement>(null);
   const [formError, setFormError] = useState("");
   const [activeSection, setActiveSection] = useState("services");
-  const heroSceneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sectionIds = ["services", "journey", "advantage", "process", "reviews", "contact"];
+    const sectionIds = ["services", "scope", "coverage", "process", "reviews", "contact"];
     const sections = sectionIds.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
     if (!sections.length || !("IntersectionObserver" in window)) return;
 
@@ -559,25 +324,6 @@ function Home() {
 
   const closeMenu = () => setMobileOpen(false);
 
-  const handleHeroPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "touch" || !heroSceneRef.current) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-    heroSceneRef.current.style.setProperty("--hero-rotate-x", `${y * -8}deg`);
-    heroSceneRef.current.style.setProperty("--hero-rotate-y", `${x * 10}deg`);
-    heroSceneRef.current.style.setProperty("--hero-shift-x", `${x * 8}px`);
-    heroSceneRef.current.style.setProperty("--hero-shift-y", `${y * 6}px`);
-  };
-
-  const resetHeroPointer = () => {
-    if (!heroSceneRef.current) return;
-    heroSceneRef.current.style.setProperty("--hero-rotate-x", "0deg");
-    heroSceneRef.current.style.setProperty("--hero-rotate-y", "0deg");
-    heroSceneRef.current.style.setProperty("--hero-shift-x", "0px");
-    heroSceneRef.current.style.setProperty("--hero-shift-y", "0px");
-  };
-
   return (
     <div className="site-shell" id="top">
       <div className="top-strip">
@@ -597,10 +343,10 @@ function Home() {
           <BrandMark />
           <nav className="desktop-nav" aria-label="Primary navigation">
             <a className={activeSection === "services" ? "nav-active" : ""} href="#services">What we dispatch</a>
-            <a className={activeSection === "journey" ? "nav-active" : ""} href="#journey">Load journey</a>
-            <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage">Why us</a>
+            <a className={activeSection === "scope" ? "nav-active" : ""} href="#scope">What we handle</a>
+            <a className={activeSection === "coverage" ? "nav-active" : ""} href="#coverage">Coverage</a>
             <a className={activeSection === "process" ? "nav-active" : ""} href="#process">How it works</a>
-            <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews">Carrier reviews</a>
+            <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews">Reviews</a>
           </nav>
           <div className="nav-actions">
             <a className="nav-call" href={`tel:${PHONE_DIGITS}`}><Phone size={15} /> <span>Call dispatch</span></a>
@@ -612,10 +358,10 @@ function Home() {
         </div>
         <div className="mobile-nav" aria-hidden={!mobileOpen}>
           <a className={activeSection === "services" ? "nav-active" : ""} href="#services" onClick={closeMenu}>What we dispatch <ArrowRight size={16} /></a>
-          <a className={activeSection === "journey" ? "nav-active" : ""} href="#journey" onClick={closeMenu}>Load journey <ArrowRight size={16} /></a>
-          <a className={activeSection === "advantage" ? "nav-active" : ""} href="#advantage" onClick={closeMenu}>Why us <ArrowRight size={16} /></a>
+          <a className={activeSection === "scope" ? "nav-active" : ""} href="#scope" onClick={closeMenu}>What we handle <ArrowRight size={16} /></a>
+          <a className={activeSection === "coverage" ? "nav-active" : ""} href="#coverage" onClick={closeMenu}>Coverage <ArrowRight size={16} /></a>
           <a className={activeSection === "process" ? "nav-active" : ""} href="#process" onClick={closeMenu}>How it works <ArrowRight size={16} /></a>
-          <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews" onClick={closeMenu}>Carrier reviews <ArrowRight size={16} /></a>
+          <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews" onClick={closeMenu}>Reviews <ArrowRight size={16} /></a>
           <a className="button button-amber" href="#contact" onClick={closeMenu}>Talk to a dispatcher <ArrowUpRight size={16} /></a>
         </div>
       </header>
@@ -635,40 +381,14 @@ function Home() {
                 <a className="text-link" href={`tel:${PHONE_DIGITS}`}><span className="play-icon"><Phone size={14} /></span> Talk to a dispatcher</a>
               </div>
               <div className="hero-proof">
-                <div className="proof-avatars"><span>MT</span><span>JR</span><span>DW</span><b>+</b></div>
                 <div><strong>Built around your run</strong><small>Real people. Real updates. 24/7.</small></div>
               </div>
             </div>
 
-            <div className="hero-visual" aria-label="3D illustration of a truck route" onPointerMove={handleHeroPointerMove} onPointerLeave={resetHeroPointer}>
-              <div className="hero-scene" ref={heroSceneRef}>
-              <div className="visual-kicker"><span>LIVE NETWORK</span><b>01:42:08</b></div>
-              <div className="hero-map-plane">
-                <div className="map-line map-line-a" />
-                <div className="map-line map-line-b" />
-                <div className="map-line map-line-c" />
-                <div className="map-node node-a"><span />DALLAS</div>
-                <div className="map-node node-b"><span />ATLANTA</div>
-                <div className="map-node node-c"><span />DENVER</div>
-                <div className="map-node node-d"><span />PHOENIX</div>
-              </div>
-              <div className="road-plane" aria-hidden="true"><i /><i /><i /><i /><i /></div>
-              <div className="road-glow road-glow-left" aria-hidden="true" />
-              <div className="road-glow road-glow-right" aria-hidden="true" />
-              <div className="convoy convoy-back convoy-back-one" aria-hidden="true"><span className="convoy-cab" /><span className="convoy-trailer" /></div>
-              <div className="convoy convoy-back convoy-back-two" aria-hidden="true"><span className="convoy-cab" /><span className="convoy-trailer" /></div>
-              <div className="orbit orbit-one" />
-              <div className="orbit orbit-two" />
-              <div className="truck-shadow" />
-              <div className="truck-visual">
-                <div className="truck-cab"><span className="truck-window" /><span className="truck-grille" /><span className="truck-headlight" /></div>
-                <div className="truck-hood" />
-                <div className="truck-trailer"><span className="trailer-stripe" /><span className="trailer-label">AL</span><span className="trailer-door" /></div>
-                <div className="truck-wheel wheel-front" /><div className="truck-wheel wheel-mid" /><div className="truck-wheel wheel-back" />
-              </div>
-              <div className="visual-card visual-card-top"><span className="card-pulse"><Zap size={13} /></span><div><small>LOAD MATCH</small><strong>98.6%</strong></div></div>
-              <div className="visual-card visual-card-bottom"><div className="route-mini"><span /><span /><span /></div><div><small>NEXT MOVE</small><strong>READY TO ROLL</strong></div><ArrowUpRight size={16} /></div>
-              <div className="visual-rings" />
+            <div className="hero-visual" aria-hidden="true">
+              <div className="hero-scene">
+                <div className="visual-card visual-card-top"><span className="card-pulse"><Zap size={13} /></span><div><small>DISPATCH DESK</small><strong>ONLINE · 24/7</strong></div></div>
+                <div className="visual-card visual-card-bottom"><div className="route-mini"><span /><span /><span /></div><div><small>NEXT MOVE</small><strong>READY TO ROLL</strong></div><ArrowUpRight size={16} /></div>
               </div>
             </div>
           </div>
@@ -703,26 +423,6 @@ function Home() {
         </section>
 
         <FreightFit />
-
-        <LoadToLaunch />
-
-        <NightRun />
-
-        <section className="section section-navy" id="advantage">
-          <div className="advantage-grid-texture" />
-          <div className="container">
-            <ScrollReveal className="section-heading split-heading light-heading">
-              <div><div className="eyebrow"><span className="eyebrow-line" /> THE AMERICAN LOGISTICS DIFFERENCE</div><h2>Not a load board.<br /><em>A better operating rhythm.</em></h2></div>
-              <div className="heading-side"><p>Your truck is your business. We bring a sharper eye to every load, every call, and every mile.</p><a className="text-link" href="#process">See the process <ArrowRight size={16} /></a></div>
-            </ScrollReveal>
-            <ScrollReveal className="benefit-layout" delay={80}>
-              <div className="benefit-intro"><div className="big-number">24<span>/</span>7</div><p>Support that stays awake when the road does.</p><div className="signal-bars"><i /><i /><i /><i /><i /></div><small>LIVE DISPATCH SIGNAL</small></div>
-              <div className="benefit-grid">
-                {benefits.map((benefit) => { const Icon = benefit.icon; return <article className="benefit-item" key={benefit.title}><div className="benefit-icon"><Icon size={19} /></div><div><h3>{benefit.title}</h3><p>{benefit.copy}</p></div></article>; })}
-              </div>
-            </ScrollReveal>
-          </div>
-        </section>
 
         <section className="section section-sand scope-section" id="scope">
           <div className="container">
@@ -771,18 +471,6 @@ function Home() {
           </div>
         </section>
 
-        <section className="section section-sand support-section">
-          <div className="container support-layout">
-            <ScrollReveal className="support-visual">
-              <div className="support-map-lines"><i /><i /><i /><i /></div>
-              <div className="support-route"><span className="route-start">START</span><div className="route-path" /><span className="route-end">NEXT LOAD</span></div>
-              <div className="support-orb"><Clock3 size={28} /><strong>24/7</strong><small>ON CALL</small></div>
-              <div className="support-ticket"><span className="ticket-dot" /><div><small>DISPATCH TICKET</small><strong>Broker update received</strong></div><BadgeCheck size={19} /></div>
-            </ScrollReveal>
-            <ScrollReveal className="support-copy" delay={100}><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHEN THE ROAD GETS LOUD</div><h2>Someone in your corner,<br /><em>every mile.</em></h2><p>Weather shifts. Brokers go quiet. A pickup window moves. That is where a dispatch partner proves their value — with calm, useful communication that keeps a small problem from becoming a lost day.</p><div className="support-points"><div><CircleCheck size={18} /><span>Fast answers when plans change</span></div><div><CircleCheck size={18} /><span>One point of contact for the moving parts</span></div><div><CircleCheck size={18} /><span>Updates you can actually act on</span></div></div><a className="text-link dark-link" href={`tel:${PHONE_DIGITS}`}>Call the desk <ArrowRight size={16} /></a></ScrollReveal>
-          </div>
-        </section>
-
         <section className="section section-light reviews-section" id="reviews">
           <div className="container">
             <ScrollReveal className="reviews-header"><div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> FROM THE DRIVER'S SEAT</div><h2>Good words from<br /><em>good operators.</em></h2></div><div className="rating-lockup"><div className="stars"><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /></div><strong>Built on communication</strong><small>Carrier relationships that go the distance.</small></div></ScrollReveal>
@@ -808,7 +496,7 @@ function Home() {
       <footer className="site-footer">
         <div className="container footer-top">
           <div className="footer-brand"><BrandMark /><p>Freight dispatching for owner-operators and small fleets who want a clearer road ahead.</p></div>
-          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#coverage">Coverage</a><a href="#process">How it works</a><a href="#advantage">Why us</a></div>
+          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#coverage">Coverage</a><a href="#process">How it works</a><a href="#reviews">Reviews</a></div>
           <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={SITE_URL}>americanlogistics.online</a></div>
         </div>
         <div className="container footer-bottom"><span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div>
