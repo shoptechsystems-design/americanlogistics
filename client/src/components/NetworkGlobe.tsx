@@ -20,7 +20,7 @@ const LANES: [number, number][] = [
 ];
 
 const RADIUS = 1;
-const AMBER = 0xe9a63b;
+const AMBER = 0xff9f1c;
 
 function toVector(lat: number, lon: number, radius = RADIUS) {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -96,7 +96,7 @@ export default function NetworkGlobe() {
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         vertexShader: "varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-        fragmentShader: "varying vec3 vN; void main(){ float i = pow(0.62 - dot(vN, vec3(0.0,0.0,1.0)), 3.0); gl_FragColor = vec4(0.91,0.65,0.23,1.0) * i * 0.9; }",
+        fragmentShader: "varying vec3 vN; void main(){ float i = pow(0.62 - dot(vN, vec3(0.0,0.0,1.0)), 3.0); gl_FragColor = vec4(1.0,0.62,0.11,1.0) * i * 0.9; }",
       }),
     );
     scene.add(glow);
