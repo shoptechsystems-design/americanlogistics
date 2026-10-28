@@ -5,6 +5,8 @@ import {
   BadgeCheck,
   Box,
   ChevronDown,
+  Check,
+  Layers,
   ClipboardList,
   Receipt,
   Sprout,
@@ -33,6 +35,7 @@ import {
 
 const NetworkGlobe = lazy(() => import("@/components/NetworkGlobe"));
 const TruckScene = lazy(() => import("@/components/TruckScene"));
+const EquipmentViewer = lazy(() => import("@/components/EquipmentViewer"));
 
 const PHONE = "+1 (817) 678-4346";
 const PHONE_DIGITS = "+18176784346";
@@ -100,12 +103,17 @@ const faqs = [
   { question: "Which areas do you cover?", answer: "We dispatch across the lower 48 states. Tell us your home base and preferred lanes and we will build around them." },
 ];
 
-const equipmentProfiles = [
-  { key: "box-truck", label: "Box truck", number: "01", icon: Box, bestFor: "Regional & last-mile", lanes: "Dallas · Atlanta · Houston", dispatch: "Palletized freight, local delivery, and shorter turns with room for home time.", route: { pickup: "DALLAS", destination: "HOUSTON", d: "M 62 216 C 105 205 128 159 174 167 S 224 214 260 178 S 319 91 398 76", stops: [{ x: 62, y: 216, city: "Dallas", freight: "Retail replenishment", detail: "Palletized regional freight with flexible pickup windows and shorter turns." }, { x: 174, y: 167, city: "Waco", freight: "Distribution pallets", detail: "Mid-lane transfer freight suited to box-truck capacity and local delivery." }, { x: 260, y: 178, city: "Austin", freight: "Last-mile inventory", detail: "Time-sensitive store and jobsite deliveries with room for same-day service." }, { x: 398, y: 76, city: "Houston", freight: "Final-mile delivery", detail: "Metro-area freight staged for efficient drop-offs and a quick return lane." }] } },
-  { key: "dry-van", label: "Dry van", number: "02", icon: Truck, bestFor: "Consistent over-the-road", lanes: "I-20 · I-40 · I-10", dispatch: "Steady lanes, broker communication, and rate support from pickup through delivery.", route: { pickup: "DALLAS", destination: "ATLANTA", d: "M 58 220 C 122 195 132 110 198 128 S 260 217 302 150 S 344 77 404 63", stops: [{ x: 58, y: 220, city: "Dallas", freight: "Consumer goods", detail: "Full truckload dry freight with dependable I-20 pickup windows." }, { x: 198, y: 128, city: "Shreveport", freight: "Building materials", detail: "Brokered replenishment freight moving east with clear appointment timing." }, { x: 302, y: 150, city: "Birmingham", freight: "General merchandise", detail: "Balanced over-the-road freight with room to protect driver hours." }, { x: 404, y: 63, city: "Atlanta", freight: "Retail distribution", detail: "High-volume inbound freight coordinated through delivery and check calls." }] } },
-  { key: "reefer", label: "Reefer", number: "03", icon: Snowflake, bestFor: "Temperature-sensitive", lanes: "Southwest · Southeast", dispatch: "Time-critical freight coordinated around appointment windows and check calls.", route: { pickup: "PHOENIX", destination: "ATLANTA", d: "M 54 226 C 105 203 148 214 177 177 S 211 84 267 112 S 331 192 404 58", stops: [{ x: 54, y: 226, city: "Phoenix", freight: "Fresh produce", detail: "Temperature-controlled produce loads with pre-cooled equipment checks." }, { x: 177, y: 177, city: "Albuquerque", freight: "Frozen foods", detail: "Cold-chain freight managed around strict appointment and temperature windows." }, { x: 267, y: 112, city: "Memphis", freight: "Grocery distribution", detail: "Time-critical reefer freight with proactive check calls at each handoff." }, { x: 404, y: 58, city: "Atlanta", freight: "Fresh & frozen delivery", detail: "Final appointment coordinated with receiver requirements and live updates." }] } },
-  { key: "flatbed", label: "Flatbed / hotshot", number: "04", icon: RouteIcon, bestFor: "Specialized & urgent", lanes: "Texas · Oklahoma · Midwest", dispatch: "Equipment-aware sourcing for open-deck, project, and expedited freight.", route: { pickup: "OKLAHOMA CITY", destination: "CHICAGO", d: "M 57 222 C 111 178 154 181 182 132 S 232 67 279 102 S 336 151 404 54", stops: [{ x: 57, y: 222, city: "Oklahoma City", freight: "Steel & pipe", detail: "Open-deck project freight matched to securement needs and equipment setup." }, { x: 182, y: 132, city: "Tulsa", freight: "Industrial components", detail: "Regional project moves with flexible loading windows and broker coordination." }, { x: 279, y: 102, city: "St. Louis", freight: "Farm equipment", detail: "Oversize-capable freight planned around permits, routing, and appointment timing." }, { x: 404, y: 54, city: "Chicago", freight: "Construction materials", detail: "Midwest delivery coordinated for jobsite access and fast proof of delivery." }] } },
-] as const;
+type EquipmentKey = "box-truck" | "dry-van" | "reefer" | "flatbed";
+
+const equipment: {
+  key: EquipmentKey; label: string; tagline: string; icon: typeof Box; summary: string;
+  freight: string[]; bestFor: string; lanes: string;
+}[] = [
+  { key: "box-truck", label: "Box truck", tagline: "Local & regional", icon: Box, summary: "Flexible freight that fits shorter turns, so you can keep home time while keeping the truck busy.", freight: ["Palletized freight", "Furniture & appliances", "Last-mile delivery", "Retail restocking"], bestFor: "Regional & last-mile", lanes: "Dallas · Atlanta · Houston" },
+  { key: "dry-van", label: "Dry van", tagline: "Over-the-road", icon: Truck, summary: "Steady lanes, clear broker communication, and rate support from pickup through delivery.", freight: ["Packaged goods", "Retail & e-commerce", "Non-perishable food", "Paper & consumer products"], bestFor: "Consistent long-haul", lanes: "I-20 · I-40 · I-10" },
+  { key: "reefer", label: "Reefer", tagline: "Temperature-controlled", icon: Snowflake, summary: "Time-critical loads coordinated around appointment windows, with check calls handled for you.", freight: ["Fresh produce", "Frozen food", "Dairy & beverages", "Pharmaceuticals"], bestFor: "Temperature-sensitive", lanes: "Southwest · Southeast" },
+  { key: "flatbed", label: "Flatbed / hotshot", tagline: "Open-deck & specialized", icon: Layers, summary: "Equipment-aware sourcing for open-deck, project and expedited freight that needs the right setup.", freight: ["Lumber & building materials", "Steel & pipe", "Machinery & equipment", "Oversize & project loads"], bestFor: "Specialized & urgent", lanes: "Texas · Oklahoma · Midwest" },
+];
 
 function BrandMark() {
   return (
@@ -206,40 +214,49 @@ function ScrollReveal({ children, className = "", delay = 0 }: { children: React
   return <div ref={revealRef} className={`scroll-reveal ${isVisible ? "is-visible" : ""} ${className}`} style={{ "--reveal-delay": `${delay}ms` } as CSSProperties}>{children}</div>;
 }
 
-function FreightFit() {
-  const [activeKey, setActiveKey] = useState<(typeof equipmentProfiles)[number]["key"]>("box-truck");
-  const [selectedStop, setSelectedStop] = useState<number | null>(null);
-  const active = equipmentProfiles.find((profile) => profile.key === activeKey) ?? equipmentProfiles[0];
-  const ActiveIcon = active.icon;
+function LazyEquipment({ equipmentKey }: { equipmentKey: EquipmentKey }) {
+  const holderRef = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
 
   useEffect(() => {
-    setSelectedStop(null);
-  }, [activeKey]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedStop(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
+    }, { rootMargin: "500px 0px" });
+    observer.observe(holderRef.current);
+    return () => observer.disconnect();
   }, []);
 
-  const selectedStopData = selectedStop === null ? null : active.route.stops[selectedStop];
-  const selectedStopPlacement = selectedStopData ? (selectedStopData.x < 105 ? "left" : selectedStopData.x > 355 ? "right" : selectedStopData.y < 90 ? "bottom" : "top") : "top";
+  return <div ref={holderRef} className="equip-lazy">{near && <Suspense fallback={<div className="truck-loading"><span>Loading 3D model…</span></div>}><EquipmentViewer equipment={equipmentKey} /></Suspense>}</div>;
+}
+
+function FreightFit() {
+  const [activeKey, setActiveKey] = useState<EquipmentKey>("box-truck");
+  const active = equipment.find((item) => item.key === activeKey) ?? equipment[0];
+  const ActiveIcon = active.icon;
 
   return <section className="freight-fit-section" id="freight-fit">
     <div className="container">
       <ScrollReveal className="freight-fit-heading">
-        <div><div className="eyebrow"><span className="eyebrow-line" /> FIND YOUR FREIGHT FIT</div><h2>The right truck.<br /><em>The right kind of run.</em></h2></div>
-        <p>Tell us what you operate and where you want to go. We shape the dispatch conversation around your actual equipment—not a generic load list.</p>
+        <div><div className="eyebrow"><span className="eyebrow-line" /> PICK YOUR EQUIPMENT</div><h2>What do you drive?<br /><em>We find what fits.</em></h2></div>
+        <p>Choose your equipment to see the kind of freight and lanes we line up for it. Every setup gets a different dispatch plan.</p>
       </ScrollReveal>
-      <div className={`freight-fit-panel freight-profile-${active.key}`}>
-        <div className="freight-fit-tabs" role="tablist" aria-label="Equipment profiles">
-          {equipmentProfiles.map((profile) => { const Icon = profile.icon; return <button key={profile.key} className={activeKey === profile.key ? "is-active" : ""} role="tab" aria-selected={activeKey === profile.key} onClick={() => setActiveKey(profile.key)}><span className="freight-tab-number">{profile.number}</span><Icon size={17} /><span>{profile.label}</span><ArrowUpRight size={14} /></button>; })}
+      <div className="equip-tabs" role="tablist" aria-label="Equipment types">
+        {equipment.map((item, index) => { const Icon = item.icon; return <button key={item.key} role="tab" aria-selected={activeKey === item.key} className={activeKey === item.key ? "is-active" : ""} onClick={() => setActiveKey(item.key)}><span className="equip-tab-number">0{index + 1}</span><Icon size={22} strokeWidth={1.6} /><strong>{item.label}</strong><small>{item.tagline}</small></button>; })}
+      </div>
+      <div className="equip-panel" role="tabpanel">
+        <div className="equip-viewer">
+          <LazyEquipment equipmentKey={activeKey} />
+          <span className="equip-badge"><ActiveIcon size={15} /> {active.label}</span>
+          <span className="equip-hint"><i /> Drag to rotate</span>
         </div>
-        <div className="freight-fit-detail" role="tabpanel">
-          <div className="freight-route-art"><div className="freight-route-grid" /><div className="freight-route-scan" /><div className="freight-route-stars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><svg key={active.key} className="freight-route-map" viewBox="0 0 460 300" preserveAspectRatio="none" aria-hidden="true"><path className="freight-route-map-shadow" d={active.route.d} /><path className="freight-route-map-base" d={active.route.d} /><path className="freight-route-map-flow" d={active.route.d} /><g className="freight-route-runner"><circle className="freight-route-runner-trail" r="8"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} begin="-1.6s" /></circle><circle className="freight-route-runner-core" r="4"><animateMotion dur="5.2s" repeatCount="indefinite" path={active.route.d} rotate="auto" /></circle></g>{active.route.stops.map((stop, index) => <circle key={`${active.key}-${index}`} className={`freight-route-waypoint waypoint-${index}`} cx={stop.x} cy={stop.y} r={index === 0 || index === active.route.stops.length - 1 ? 4 : 3} />)}</svg>{active.route.stops.map((stop, index) => <button key={`${active.key}-stop-${stop.city}`} className={`freight-route-stop ${selectedStop === index ? "is-selected" : ""}`} style={{ "--stop-x": `${stop.x / 4.6}%`, "--stop-y": `${stop.y / 3}%` } as CSSProperties} aria-label={`Show ${stop.city} lane stop details`} aria-pressed={selectedStop === index} onClick={() => setSelectedStop(selectedStop === index ? null : index)}><span /></button>)}{selectedStopData && <div className={`freight-route-stop-card placement-${selectedStopPlacement}`} role="dialog" aria-label={`${selectedStopData.city} freight details`} style={{ "--stop-x": `${selectedStopData.x / 4.6}%`, "--stop-y": `${selectedStopData.y / 3}%` } as CSSProperties}><div><small>LANE STOP</small><strong>{selectedStopData.city}</strong></div><button type="button" aria-label="Close lane stop details" onClick={() => setSelectedStop(null)}><X size={13} /></button><p><b>{selectedStopData.freight}</b>{selectedStopData.detail}</p></div>}<div className="freight-route-route-label route-label-one">PICKUP <b>{active.route.pickup}</b></div><div className="freight-route-route-label route-label-two">DESTINATION <b>{active.route.destination}</b></div><div className="freight-route-truck"><span className="freight-truck-shadow" /><ActiveIcon size={27} strokeWidth={1.2} /><i className="freight-truck-beacon" /></div><div className="freight-route-telemetry"><span><b>BEST FOR</b><strong>{active.bestFor}</strong></span><span><b>EQUIPMENT</b><strong>{active.label}</strong></span><span><b>STATUS</b><strong>READY</strong></span></div><div className="freight-route-cargo"><span className="cargo-bar cargo-bar-one" /><span className="cargo-bar cargo-bar-two" /><span className="cargo-bar cargo-bar-three" /><b>{active.label.toUpperCase()}</b></div></div>
-          <div className="freight-fit-copy"><div className="freight-fit-kicker"><span className="live-dot" /> CURRENT PROFILE <b>{active.number} / 04</b></div><div className="freight-fit-title"><ActiveIcon size={23} /><h3>{active.label}</h3></div><p>{active.dispatch}</p><div className="freight-fit-facts"><div><small>BEST FOR</small><strong>{active.bestFor}</strong></div><div><small>LANE EXAMPLES</small><strong>{active.lanes}</strong></div></div><a className="button button-amber" href="#contact">Build my {active.label.toLowerCase()} plan <ArrowUpRight size={16} /></a></div>
+        <div className="equip-info">
+          <div className="equip-kicker"><span className="live-dot" /> WHAT WE DISPATCH FOR YOU</div>
+          <h3>{active.label}</h3>
+          <p>{active.summary}</p>
+          <div className="equip-freight"><small>TYPICAL FREIGHT</small><ul>{active.freight.map((item) => <li key={item}><Check size={14} />{item}</li>)}</ul></div>
+          <div className="equip-facts"><div><small>BEST FOR</small><strong>{active.bestFor}</strong></div><div><small>COMMON LANES</small><strong>{active.lanes}</strong></div></div>
+          <a className="button button-amber" href="#contact">Get a {active.label.toLowerCase()} plan <ArrowUpRight size={16} /></a>
         </div>
       </div>
       <div className="freight-fit-service-area"><span>SERVICE AREA</span><strong>U.S. carrier support</strong><i /><span>LOCAL · REGIONAL · OTR</span><b>Dallas</b><b>Atlanta</b><b>Houston</b><b>Oklahoma City</b><b>Beyond</b></div>
