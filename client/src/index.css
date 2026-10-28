@@ -144,9 +144,8 @@
     min-height: 0;
     padding-top: 138px;
     padding-bottom: 150px;
-    background-image: linear-gradient(180deg, rgba(9,12,16,.98) 0%, rgba(9,12,16,.95) 58%, rgba(9,12,16,.5) 80%, rgba(9,12,16,.15) 100%), url('/images/hero-truck-sm.jpg');
-    background-size: cover;
-    background-position: 67% center;
+    background-image: none;
+    background-color: #090c10;
   }
   .hero-content { min-height: 0; }
   .hero-copy { max-width: 560px; padding-bottom: 0; }
@@ -374,7 +373,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .hero-visual { transform-style: flat; }
 .hero-section::after { background: linear-gradient(transparent, #090c10 92%); }
 @media (max-width: 720px) {
-  .hero-section { background-position: 0 0, 74% 100%; background-size: 100% 100%, auto 50%; padding-bottom: 200px; background-color: #090c10; }
 }
 
 /* ---- Reviews heading (was unstyled) ---- */
@@ -542,4 +540,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .equip-viewer { min-height: 320px; }
   .equip-freight ul, .equip-facts { grid-template-columns: 1fr; }
   .equip-info .button { width: 100%; justify-content: center; }
+}
+
+/* ---- Mobile hero: the photo is sized by width so the whole truck always fits ---- */
+@media (max-width: 720px) {
+  .hero-section { padding-bottom: calc(clamp(394px, 107vw, 619px) - 90px); }
+  .hero-section::after { height: 80px; }
+  .hero-section::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -2; pointer-events: none;
+    height: clamp(394px, 107vw, 619px);
+    background: url('/images/hero-truck-md.jpg') 92% 100% / clamp(700px, 190vw, 1100px) auto no-repeat;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 34%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 34%);
+  }
 }
