@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 const NetworkGlobe = lazy(() => import("@/components/NetworkGlobe"));
+const TruckScene = lazy(() => import("@/components/TruckScene"));
 
 const PHONE = "+1 (817) 678-4346";
 const PHONE_DIGITS = "+18176784346";
@@ -136,6 +137,22 @@ function LazyGlobe() {
   }, []);
 
   return <div ref={holderRef} className="globe-holder">{near && <Suspense fallback={<div className="globe-loading" />}><NetworkGlobe /></Suspense>}</div>;
+}
+
+function LazyTruck() {
+  const holderRef = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    if (!holderRef.current || !("IntersectionObserver" in window)) { setNear(true); return; }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
+    }, { rootMargin: "600px 0px" });
+    observer.observe(holderRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={holderRef} className="truck-lazy">{near && <Suspense fallback={<div className="truck-loading"><span>Loading 3D scene…</span></div>}><TruckScene /></Suspense>}</div>;
 }
 
 function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
@@ -422,6 +439,18 @@ function Home() {
           </div>
         </section>
 
+        <section className="truck-section" id="rolling" aria-label="Interactive 3D truck">
+          <LazyTruck />
+          <div className="container truck-overlay">
+            <ScrollReveal className="truck-copy">
+              <div className="eyebrow"><span className="eyebrow-line" /> ALWAYS ROLLING</div>
+              <h2>Momentum is<br /><em>the whole game.</em></h2>
+              <p>Every idle hour costs you money. We keep the next load lined up so your wheels keep turning. Scroll to hit the gas, or switch the camera angle.</p>
+              <a className="button button-amber" href="#contact">Keep my truck rolling <ArrowUpRight size={16} /></a>
+            </ScrollReveal>
+          </div>
+        </section>
+
         <FreightFit />
 
         <section className="section section-sand scope-section" id="scope">
@@ -501,7 +530,7 @@ function Home() {
         <div className="container footer-top">
           <div className="footer-brand"><BrandMark /><p>Freight dispatching for owner-operators and small fleets who want a clearer road ahead.</p></div>
           <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#coverage">Coverage</a><a href="#process">How it works</a><a href="#reviews">Reviews</a></div>
-          <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a><a href={SITE_URL}>americanlogistics.online</a></div>
+          <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
         </div>
         <div className="container footer-bottom"><span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div>
       </footer>
