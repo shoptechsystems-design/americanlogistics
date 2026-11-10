@@ -60,6 +60,8 @@ const scope = [
   { icon: ShieldCheck, title: "Problem solving", copy: "Detention, breakdowns, reschedules — you have someone to call when plans change." },
 ];
 
+const scopeTags = ["Every week", "Every load", "Every call", "Before you roll", "In transit", "After delivery", "Always ahead", "24/7"];
+
 const audiences = [
   { icon: Truck, title: "Owner-operators", copy: "One truck, your rules. We handle the office work so you can stay on the road and earn." },
   { icon: Building2, title: "Small fleets", copy: "Growing past one truck? We help you keep every unit moving without hiring a full dispatch team." },
@@ -81,10 +83,10 @@ const benefits = [
 ];
 
 const steps = [
-  { number: "01", title: "Tell us about your truck", copy: "Share your equipment, preferred lanes, and how you want to run." },
-  { number: "02", title: "We find the right freight", copy: "Our dispatch team filters opportunities against your real-world goals." },
-  { number: "03", title: "We negotiate and coordinate", copy: "We handle broker calls, rate conversations, and the moving parts." },
-  { number: "04", title: "You haul. We stay close.", copy: "You focus on the road while we keep the next load and every detail in view." },
+  { number: "01", icon: Truck, tag: "Quick call", title: "Tell us about your truck", copy: "Share your equipment, preferred lanes, and how you want to run." },
+  { number: "02", icon: MapPinned, tag: "Matched freight", title: "We find the right freight", copy: "Our dispatch team filters opportunities against your real-world goals." },
+  { number: "03", icon: Handshake, tag: "Rates confirmed", title: "We negotiate and coordinate", copy: "We handle broker calls, rate conversations, and the moving parts." },
+  { number: "04", icon: RadioTower, tag: "Always on", title: "You haul. We stay close.", copy: "You focus on the road while we keep the next load and every detail in view." },
 ];
 
 const testimonials = [
@@ -529,7 +531,7 @@ function Home() {
               <div className="heading-side"><p>One dispatch desk covering the calls, paperwork and planning that eat your day.</p><a className="text-link dark-link" href="#contact">Get started <ArrowRight size={16} /></a></div>
             </ScrollReveal>
             <ScrollReveal className="scope-grid" delay={80}>
-              {scope.map((item, index) => { const Icon = item.icon; return <article className="scope-item" key={item.title}><span className="scope-index">{String(index + 1).padStart(2, "0")}</span><span className="scope-icon"><Icon size={20} strokeWidth={1.6} /></span><h3>{item.title}</h3><p>{item.copy}</p></article>; })}
+              {scope.map((item, index) => { const Icon = item.icon; return <article className="scope-item" key={item.title}><span className="scope-index">{String(index + 1).padStart(2, "0")}</span><span className="scope-icon"><Icon size={22} strokeWidth={1.6} /></span><h3>{item.title}</h3><p>{item.copy}</p><div className="scope-foot"><span className="scope-tag"><i />{scopeTags[index]}</span><ArrowUpRight className="scope-arrow" size={16} /></div></article>; })}
             </ScrollReveal>
             <ScrollReveal className="audience-block" delay={120}>
               <div className="audience-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHO WE WORK WITH</div><h3>Built for carriers of every size.</h3></div>
@@ -567,7 +569,7 @@ function Home() {
           <div className="container">
             <ScrollReveal className="section-heading center-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> SIMPLE BY DESIGN</div><h2>Your next move,<br /><em>handled.</em></h2><p>One clear partner from the first call to the final proof of delivery.</p></ScrollReveal>
             <ScrollReveal className="process-grid" delay={80}>
-              {steps.map((step, index) => <article className={`process-step ${index === steps.length - 1 ? "process-step-last" : ""}`} key={step.number}><div className="step-number">{step.number}</div><div className="step-connector" /><h3>{step.title}</h3><p>{step.copy}</p></article>)}
+              {steps.map((step) => { const Icon = step.icon; return <article className="process-step" key={step.number}><span className="step-ghost" aria-hidden="true">{step.number}</span><div className="step-node"><Icon size={20} strokeWidth={1.7} /></div><div className="step-number">STEP {step.number}</div><h3>{step.title}</h3><p>{step.copy}</p><span className="step-tag"><Check size={12} strokeWidth={2.4} />{step.tag}</span></article>; })}
             </ScrollReveal>
             <ScrollReveal className="process-callout" delay={160}><div className="callout-mark"><CircleCheck size={22} /></div><p><strong>Good dispatch feels quiet.</strong> You get clear options, fast answers, and the confidence to keep rolling.</p><a className="button button-dark" href="#contact">Build my dispatch plan <ArrowUpRight size={16} /></a></ScrollReveal>
           </div>
