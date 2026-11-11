@@ -152,7 +152,7 @@ function Home() {
     setSending(true);
     setFormError("");
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 20000);
+    const timer = window.setTimeout(() => controller.abort(), 45000);
     try {
       const { website: _honeypot, ...fields } = data;
       const response = await fetch(endpoint, {
@@ -165,8 +165,12 @@ function Home() {
       form.reset();
       setSentName(data.name.trim().split(" ")[0]);
       setResult("sent");
-    } catch {
-      setFormError(`We couldn't send your inquiry. Please try again, or call ${PHONE} or email ${EMAIL}.`);
+    } catch (error) {
+      setFormError(
+        (error as Error).name === "AbortError"
+          ? `This is taking longer than usual. Your inquiry may still have gone through. Please call ${PHONE} to confirm before sending it again.`
+          : `We couldn't send your inquiry. Please try again, or call ${PHONE} or email ${EMAIL}.`
+      );
     } finally {
       window.clearTimeout(timer);
       setSending(false);
