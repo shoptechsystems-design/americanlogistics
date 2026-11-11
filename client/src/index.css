@@ -235,6 +235,12 @@ input[aria-invalid="true"] { border-color: var(--red); }
 .form-error { background: #fdecee; padding: 12px 14px; border-left: 4px solid var(--red); }
 .privacy { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.spin { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sending-note { font-size: 14px; color: var(--ink-2); text-align: center; margin-top: -8px; }
+.done-icon { color: #1f7a4d; }
+.done-steps { margin: 0; padding-left: 20px; color: #3b4452; display: grid; gap: 6px; }
+.done-urgent { padding-top: 14px; border-top: 1px solid var(--line); width: 100%; }
 .form-done { display: grid; gap: 16px; justify-items: start; padding: 12px 0; }
 .form-done p { color: #3b4452; }
 .form-done a { color: var(--navy); font-weight: 700; }

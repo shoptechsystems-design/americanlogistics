@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
+  CircleCheck,
   ClipboardCheck,
   ClipboardList,
   Clock3,
   FileText,
   Handshake,
   Headset,
+  LoaderCircle,
   Mail,
   Menu,
   MessagesSquare,
@@ -113,6 +115,7 @@ function Home() {
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
   const [result, setResult] = useState<null | "sent" | "email">(null);
+  const [sentName, setSentName] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -148,14 +151,24 @@ function Home() {
 
     setSending(true);
     setFormError("");
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ ...data, source: SITE_URL }) });
+      const { website: _honeypot, ...fields } = data;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...fields, _subject: `New dispatch inquiry from ${data.name}`, source: SITE_URL }),
+        signal: controller.signal,
+      });
       if (!response.ok) throw new Error(String(response.status));
       form.reset();
+      setSentName(data.name.trim().split(" ")[0]);
       setResult("sent");
     } catch {
-      setFormError(`We couldn't send your inquiry. Please call ${PHONE} or email ${EMAIL}.`);
+      setFormError(`We couldn't send your inquiry. Please try again, or call ${PHONE} or email ${EMAIL}.`);
     } finally {
+      window.clearTimeout(timer);
       setSending(false);
     }
   };
@@ -390,13 +403,22 @@ function Home() {
             <div className="form-card">
               {result ? (
                 <div className="form-done" role="status">
-                  <h3>{result === "sent" ? "Thanks. We've got your inquiry." : "Almost there."}</h3>
-                  <p>
-                    {result === "sent"
-                      ? <>Someone from our team will contact you. If it's urgent, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</>
-                      : <>Your email app should have opened with your message ready to send. If it didn't, email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> or call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</>}
-                  </p>
-                  <button className="btn btn-outline" onClick={() => setResult(null)}>Back to the form</button>
+                  <CircleCheck className="done-icon" size={56} strokeWidth={1.5} aria-hidden="true" />
+                  <h3>{result === "sent" ? `Thanks${sentName ? `, ${sentName}` : ""}. We've got your inquiry.` : "Almost there."}</h3>
+                  {result === "sent" ? (
+                    <>
+                      <p>Your details are with our dispatch team. We'll contact you by phone or email about your equipment and lanes.</p>
+                      <ol className="done-steps">
+                        <li>We review your inquiry.</li>
+                        <li>We reach out to talk about your truck and the freight you want.</li>
+                        <li>If it's a fit, we start looking for loads.</li>
+                      </ol>
+                      <p className="done-urgent">Need us sooner? Call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p>
+                    </>
+                  ) : (
+                    <p>Your email app should have opened with your message ready to send. If it didn't, email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> or call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p>
+                  )}
+                  <button className="btn btn-outline" onClick={() => setResult(null)}>Send another inquiry</button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate>
@@ -436,7 +458,8 @@ function Home() {
                   </label>
                   <input className="hp" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
                   {formError && <p className="form-error" role="alert">{formError}</p>}
-                  <button className="btn btn-red btn-block" type="submit" disabled={sending}>{sending ? "Sending…" : "Send Inquiry"}{!sending && <ArrowRight size={17} />}</button>
+                  <button className="btn btn-red btn-block" type="submit" disabled={sending} aria-busy={sending}>{sending ? <><LoaderCircle className="spin" size={19} aria-hidden="true" /> Sending your inquiry…</> : <>Send Inquiry <ArrowRight size={17} /></>}</button>
+                  {sending && <p className="sending-note" role="status">Please keep this page open. This only takes a few seconds.</p>}
                   <p className="privacy"><strong>Privacy.</strong> We use the details you send only to respond to your inquiry about dispatch support. Fields marked * are required.</p>
                 </form>
               )}
