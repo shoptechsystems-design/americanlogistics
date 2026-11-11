@@ -17,5 +17,6 @@ Without it, the form opens the visitor's email app addressed to the contact emai
 
 ## Things to keep up to date (client/src/pages/Home.tsx)
 - `PHONE`, `EMAIL`, `SITE_URL` near the top of the file
-- `stats`, `testimonials`, `faqs` content
+- `PHOTOS` — swap image files in `client/public/images/` (keep the same names or update the paths)
+- `EQUIPMENT`, `SERVICES`, `WHY`, `STEPS` content arrays
 - `client/index.html` structured data (phone, email)

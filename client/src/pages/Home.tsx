@@ -1,386 +1,125 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
-  ArrowUpRight,
-  BadgeCheck,
-  Box,
-  ChevronDown,
-  Check,
-  Layers,
+  ClipboardCheck,
   ClipboardList,
-  Receipt,
-  Sprout,
-  Building2,
-  MapPinned,
-  PhoneCall,
-  CircleCheck,
   Clock3,
-  FileCheck2,
+  FileText,
   Handshake,
+  Headset,
   Mail,
   Menu,
+  MessagesSquare,
   Phone,
-  Quote,
-  RadioTower,
-  Route as RouteIcon,
-  ShieldCheck,
-  Snowflake,
-  Star,
+  Search,
   Truck,
   X,
-  Zap,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 
-const NetworkGlobe = lazy(() => import("@/components/NetworkGlobe"));
-const TruckScene = lazy(() => import("@/components/TruckScene"));
-const EquipmentViewer = lazy(() => import("@/components/EquipmentViewer"));
-
+/* ------------------------------------------------------------------ *
+ * Verified business details (carried over from the existing site).
+ * Update here only — they feed the header, footer, form and SEO links.
+ * ------------------------------------------------------------------ */
 const PHONE = "+1 (817) 678-4346";
 const PHONE_DIGITS = "+18176784346";
 const EMAIL = "Dispatch5services@gmail.com";
 const SITE_URL = "https://americanlogistics.online";
 
-const stats = [
-  { value: <>24<span>/</span>7</>, label: "Live dispatch desk" },
-  { value: <CountUp to={5} suffix="+" />, label: "Equipment types dispatched" },
-  { value: <CountUp to={48} />, label: "Lower-48 states covered" },
-  { value: <>1<span>:</span>1</>, label: "A real dispatcher on your account" },
+/* Photography lives in /public/images. Swap files here, nothing else changes. */
+const PHOTOS = {
+  hero: {
+    src: "/images/hero-dusk-1000.webp",
+    srcSet: "/images/hero-dusk-640.webp 640w, /images/hero-dusk-1000.webp 1000w, /images/hero-dusk-1400.webp 1400w",
+    alt: "A semi-truck and dry van trailer driving down a U.S. highway at dusk",
+    width: 1000,
+    height: 1500,
+  },
+  about: {
+    src: "/images/warehouse-900.webp",
+    srcSet: "/images/warehouse-600.webp 600w, /images/warehouse-900.webp 900w",
+    alt: "A long aisle of palletized freight on shelving inside a distribution warehouse",
+    width: 900,
+    height: 1350,
+  },
+};
+
+const NAV = [
+  { href: "#top", label: "Home" },
+  { href: "#about", label: "About Us" },
+  { href: "#services", label: "Services" },
+  { href: "#why", label: "Why Choose Us" },
+  { href: "#contact", label: "Contact" },
 ];
 
-const scope = [
-  { icon: MapPinned, title: "Load sourcing", copy: "We search boards and broker relationships for freight that matches your equipment, lanes and home time." },
-  { icon: Handshake, title: "Rate negotiation", copy: "We negotiate every rate so your truck is paid what the lane is worth, not the first number offered." },
-  { icon: PhoneCall, title: "Broker communication", copy: "Calls, emails and follow-ups with brokers and shippers are on us, so you can focus on driving." },
-  { icon: ClipboardList, title: "Rate confirmations", copy: "We review terms, confirm details and make sure what was promised is what is on paper." },
-  { icon: RadioTower, title: "Check calls & updates", copy: "We keep brokers informed and flag delays early, so nobody has to chase you for a status." },
-  { icon: Receipt, title: "Invoicing support", copy: "We help get paperwork and proof of delivery organised so billing is quick and clean." },
-  { icon: RouteIcon, title: "Route & trip planning", copy: "We plan the next load before the current one ends to cut deadhead and idle time." },
-  { icon: ShieldCheck, title: "Problem solving", copy: "Detention, breakdowns, reschedules — you have someone to call when plans change." },
+const EQUIPMENT = [
+  { name: "26-ft Box Trucks", use: "Local and regional freight that lets you sleep at home more often.", look: "Palletized freight, furniture, appliances, retail deliveries" },
+  { name: "Cargo Vans", use: "Small, time-sensitive loads where a quick turnaround matters most.", look: "Expedited and direct freight, short-notice pickups" },
+  { name: "Dry Vans", use: "Enclosed trailers hauling general freight on steady lanes.", look: "Packaged goods, consumer products, non-perishable food" },
+  { name: "Refrigerated Trucks", use: "Temperature-controlled freight with tight appointment windows.", look: "Produce, frozen and dairy products, check-call discipline" },
+  { name: "Flatbeds", use: "Open-deck freight that needs the right setup and securement.", look: "Building materials, steel, machinery, tarp and strap loads" },
+  { name: "Hotshots", use: "Fast, smaller open-deck freight that can't wait on a full-size truck.", look: "Expedited equipment, parts, partial and time-critical loads" },
 ];
 
-const scopeTags = ["Every week", "Every load", "Every call", "Before you roll", "In transit", "After delivery", "Always ahead", "24/7"];
-
-const audiences = [
-  { icon: Truck, title: "Owner-operators", copy: "One truck, your rules. We handle the office work so you can stay on the road and earn." },
-  { icon: Building2, title: "Small fleets", copy: "Growing past one truck? We help you keep every unit moving without hiring a full dispatch team." },
-  { icon: Sprout, title: "New authorities", copy: "Just got your MC? We help you get started with the right brokers and lanes from day one." },
+const SERVICES = [
+  { icon: Search, title: "Freight and Load Searching", copy: "We work the load boards and our broker contacts for freight that fits your equipment, your lanes and your home time, so you aren't scrolling boards between stops." },
+  { icon: Handshake, title: "Rate Negotiation", copy: "A posted rate is a starting point. We negotiate with the broker and weigh the lane, the miles and the deadhead before we agree to a number." },
+  { icon: Phone, title: "Broker Communication", copy: "The calls, emails and follow-ups go through us. You get the details that matter, not the back-and-forth that eats your day." },
+  { icon: ClipboardCheck, title: "Load Booking and Coordination", copy: "Once you approve a load, we book it, confirm pickup and delivery windows, and sort out changes as they come up." },
+  { icon: FileText, title: "Dispatch Documentation", copy: "We check rate confirmations against what was agreed and keep dispatch paperwork organized, so billing isn't a scramble later." },
+  { icon: Headset, title: "Ongoing Carrier Support", copy: "A breakdown, a late appointment, detention, a load that falls through. You have someone to call when the plan changes." },
 ];
 
-const services = [
-  { icon: Box, title: "Box Trucks", copy: "Flexible regional and last-mile freight matched to your equipment." },
-  { icon: Truck, title: "Dry Vans", copy: "Consistent lanes, better communication, and rate support from pickup to delivery." },
-  { icon: Snowflake, title: "Reefers", copy: "Temperature-sensitive loads coordinated with the urgency they demand." },
-  { icon: RouteIcon, title: "Flatbeds & Hotshots", copy: "Specialized freight sourced around your preferred territory and setup." },
+const WHY = [
+  { title: "24/7 dispatch communication", copy: "Freight doesn't keep office hours. When something comes up on a load, you can reach us." },
+  { title: "Professional broker coordination", copy: "We deal with brokers every day. We keep conversations direct, polite and on the record." },
+  { title: "Rate negotiation", copy: "We negotiate for every load. We'll also tell you when a rate doesn't make sense for your truck." },
+  { title: "Transparent pricing", copy: "We explain how dispatch is priced before you commit to anything. No guessing about what you owe." },
+  { title: "No forced dispatch", copy: "You decide what your truck runs. We bring options and a recommendation. We don't push loads on you." },
+  { title: "Carrier-focused service", copy: "We work for the carrier. Your equipment, lanes and schedule shape the freight we look for." },
+  { title: "Consistent communication", copy: "You hear from us at pickup, at delivery and when something changes, without having to ask." },
 ];
 
-const benefits = [
-  { icon: RadioTower, title: "Always-on communication", copy: "A real person stays close to your load, your broker, and your next move." },
-  { icon: Handshake, title: "Rate negotiation", copy: "We protect your time and push for freight that makes sense for your truck." },
-  { icon: FileCheck2, title: "Paperwork handled", copy: "From rate confirmations to check calls, we keep the details moving." },
-  { icon: ShieldCheck, title: "Carrier-first support", copy: "Clear updates, honest options, and no disappearing when the plan changes." },
+const STEPS = [
+  { icon: Truck, title: "Tell us about your truck", copy: "A short call or form. Who you are, what you drive, where your authority stands." },
+  { icon: ClipboardList, title: "Share your equipment and operating requirements", copy: "Lanes, home time, rate floor, anything you won't haul. We build around it." },
+  { icon: Search, title: "We search, negotiate and coordinate loads", copy: "We find freight, negotiate with brokers and bring you loads to approve." },
+  { icon: MessagesSquare, title: "Stay connected with our dispatch team", copy: "We stay in touch through pickup and delivery, and we're a call away when plans change." },
 ];
 
-const steps = [
-  { number: "01", icon: Truck, tag: "Quick call", title: "Tell us about your truck", copy: "Share your equipment, preferred lanes, and how you want to run." },
-  { number: "02", icon: MapPinned, tag: "Matched freight", title: "We find the right freight", copy: "Our dispatch team filters opportunities against your real-world goals." },
-  { number: "03", icon: Handshake, tag: "Rates confirmed", title: "We negotiate and coordinate", copy: "We handle broker calls, rate conversations, and the moving parts." },
-  { number: "04", icon: RadioTower, tag: "Always on", title: "You haul. We stay close.", copy: "You focus on the road while we keep the next load and every detail in view." },
-];
+const EQUIPMENT_OPTIONS = ["26-ft Box Truck", "Cargo Van", "Dry Van", "Refrigerated Truck", "Flatbed", "Hotshot", "Other"];
 
-const testimonials = [
-  { quote: "American Logistics gives me the kind of communication I wish I had from every broker. I know what is happening before I have to ask.", name: "Marcus T.", meta: "Dry van carrier · Texas" },
-  { quote: "They learned how I like to run instead of sending random loads. My week feels more intentional and a lot less stressful.", name: "Jasmine R.", meta: "Box truck owner · Georgia" },
-  { quote: "The biggest difference is that someone actually picks up. When a load shifts, I am not left figuring it out alone.", name: "Derrick W.", meta: "Hotshot operator · Oklahoma" },
-];
+type Field = "name" | "phone" | "email";
+type Errors = Partial<Record<Field, string>>;
 
-const faqs = [
-  { question: "What equipment do you dispatch?", answer: "We work with box trucks, dry vans, reefers, flatbeds, hotshots, and other owner-operator setups. Tell us what you run and where you want to operate." },
-  { question: "How much does dispatching cost?", answer: "We explain our pricing clearly on the first call, before you commit to anything. Ask us about it and we will walk you through exactly how it works." },
-  { question: "Do I have to run full-time?", answer: "No. We build around your availability, preferred home time, and the lanes that fit your business." },
-  { question: "Can you work with a brand-new MC authority?", answer: "Yes. New carriers are welcome. We will talk through your setup and help you plan a realistic start with the right freight and brokers." },
-  { question: "What do I need to get started?", answer: "Typically your MC and DOT numbers, certificate of insurance, W-9, and basic details about your truck and preferred lanes. We will tell you exactly what is needed on the call." },
-  { question: "How does the first conversation work?", answer: "We start with a quick, low-pressure call to understand your equipment and goals. From there, we can outline what a dispatch partnership could look like." },
-  { question: "Which areas do you cover?", answer: "We dispatch across the lower 48 states. Tell us your home base and preferred lanes and we will build around them." },
-];
-
-type EquipmentKey = "box-truck" | "dry-van" | "reefer" | "flatbed";
-
-const equipment: {
-  key: EquipmentKey; label: string; tagline: string; icon: typeof Box; summary: string;
-  freight: string[]; bestFor: string; lanes: string;
-}[] = [
-  { key: "box-truck", label: "Box truck", tagline: "Local & regional", icon: Box, summary: "Flexible freight that fits shorter turns, so you can keep home time while keeping the truck busy.", freight: ["Palletized freight", "Furniture & appliances", "Last-mile delivery", "Retail restocking"], bestFor: "Regional & last-mile", lanes: "Dallas · Atlanta · Houston" },
-  { key: "dry-van", label: "Dry van", tagline: "Over-the-road", icon: Truck, summary: "Steady lanes, clear broker communication, and rate support from pickup through delivery.", freight: ["Packaged goods", "Retail & e-commerce", "Non-perishable food", "Paper & consumer products"], bestFor: "Consistent long-haul", lanes: "I-20 · I-40 · I-10" },
-  { key: "reefer", label: "Reefer", tagline: "Temperature-controlled", icon: Snowflake, summary: "Time-critical loads coordinated around appointment windows, with check calls handled for you.", freight: ["Fresh produce", "Frozen food", "Dairy & beverages", "Pharmaceuticals"], bestFor: "Temperature-sensitive", lanes: "Southwest · Southeast" },
-  { key: "flatbed", label: "Flatbed / hotshot", tagline: "Open-deck & specialized", icon: Layers, summary: "Equipment-aware sourcing for open-deck, project and expedited freight that needs the right setup.", freight: ["Lumber & building materials", "Steel & pipe", "Machinery & equipment", "Oversize & project loads"], bestFor: "Specialized & urgent", lanes: "Texas · Oklahoma · Midwest" },
-];
-
-function BrandMark() {
+function BrandMark({ light = false }: { light?: boolean }) {
   return (
-    <a className="brand" href="#top" aria-label="American Logistics home">
-      <span className="brand-mark" aria-hidden="true">
-        <span className="brand-route" />
-        <span className="brand-dot brand-dot-one" />
-        <span className="brand-dot brand-dot-two" />
-      </span>
-      <span className="brand-copy">
-        <strong>AMERICAN <span>LOGISTICS</span></strong>
-        <small>FREIGHT DISPATCH</small>
-      </span>
+    <a className={`brand ${light ? "brand-light" : ""}`} href="#top" aria-label="American Logistics, home">
+      <img src="/images/logo.png" width={440} height={277} alt="American Logistics" decoding="async" />
     </a>
   );
 }
 
-/** True once the page has loaded and settled, so heavy 3D work never competes with the first paint. */
-function useSettled(delay = 2500) {
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    let timer = 0;
-    const go = () => { timer = window.setTimeout(() => setSettled(true), delay); };
-    if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
-    return () => { window.clearTimeout(timer); window.removeEventListener("load", go); };
-  }, [delay]);
-  return settled;
-}
-
-function LazyGlobe() {
-  const holderRef = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
-
-  const settled = useSettled();
-  useEffect(() => {
-    if (near) return;
-    const el = holderRef.current;
-    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: settled ? "1400px 0px" : "0px" });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [settled, near]);
-
-  return <div ref={holderRef} className="globe-holder">{near && <Suspense fallback={<div className="globe-loading" />}><NetworkGlobe /></Suspense>}</div>;
-}
-
-function LazyTruck() {
-  const holderRef = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
-
-  const settled = useSettled();
-  useEffect(() => {
-    if (near) return;
-    const el = holderRef.current;
-    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: settled ? "1400px 0px" : "0px" });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [settled, near]);
-
-  return <div ref={holderRef} className="truck-lazy">{near && <><div className="truck-poster" /><Suspense fallback={null}><TruckScene /></Suspense></>}</div>;
-}
-
-function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [value, setValue] = useState(to);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node || !("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    setValue(0);
-    let raf = 0;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer.disconnect();
-      const start = performance.now();
-      const tick = (now: number) => {
-        const progress = Math.min((now - start) / 1400, 1);
-        setValue(Math.round(to * (1 - Math.pow(1 - progress, 3))));
-        if (progress < 1) raf = requestAnimationFrame(tick);
-      };
-      raf = requestAnimationFrame(tick);
-    }, { threshold: 0.6 });
-    observer.observe(node);
-    return () => { observer.disconnect(); cancelAnimationFrame(raf); };
-  }, [to]);
-
-  return <span ref={ref}>{value}{suffix}</span>;
-}
-
-function ScrollReveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  const revealRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (!revealRef.current || !("IntersectionObserver" in window)) {
-      setIsVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-        observer.disconnect();
-      }
-    }, { threshold: 0.16, rootMargin: "0px 0px -8% 0px" });
-
-    observer.observe(revealRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return <div ref={revealRef} className={`scroll-reveal ${isVisible ? "is-visible" : ""} ${className}`} style={{ "--reveal-delay": `${delay}ms` } as CSSProperties}>{children}</div>;
-}
-
-function LazyEquipment({ equipmentKey }: { equipmentKey: EquipmentKey }) {
-  const holderRef = useRef<HTMLDivElement>(null);
-  const [near, setNear] = useState(false);
-
-  const settled = useSettled();
-  useEffect(() => {
-    if (near) return;
-    const el = holderRef.current;
-    if (!el || !("IntersectionObserver" in window)) { setNear(true); return; }
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setNear(true); observer.disconnect(); }
-    }, { rootMargin: settled ? "1400px 0px" : "0px" });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [settled, near]);
-
-  return <div ref={holderRef} className="equip-lazy">{near && <Suspense fallback={<div className="truck-loading"><span>Loading 3D model…</span></div>}><EquipmentViewer equipment={equipmentKey} /></Suspense>}</div>;
-}
-
-function FreightFit() {
-  const [activeKey, setActiveKey] = useState<EquipmentKey>("box-truck");
-  const active = equipment.find((item) => item.key === activeKey) ?? equipment[0];
-  const ActiveIcon = active.icon;
-
-  return <section className="freight-fit-section" id="freight-fit">
-    <div className="container">
-      <ScrollReveal className="freight-fit-heading">
-        <div><div className="eyebrow"><span className="eyebrow-line" /> PICK YOUR EQUIPMENT</div><h2>What do you drive?<br /><em>We find what fits.</em></h2></div>
-        <p>Choose your equipment to see the kind of freight and lanes we line up for it. Every setup gets a different dispatch plan.</p>
-      </ScrollReveal>
-      <div className="equip-tabs" role="tablist" aria-label="Equipment types">
-        {equipment.map((item, index) => { const Icon = item.icon; return <button key={item.key} role="tab" aria-selected={activeKey === item.key} className={activeKey === item.key ? "is-active" : ""} onClick={() => setActiveKey(item.key)}><span className="equip-tab-number">0{index + 1}</span><Icon size={22} strokeWidth={1.6} /><strong>{item.label}</strong><small>{item.tagline}</small></button>; })}
-      </div>
-      <div className="equip-panel" role="tabpanel">
-        <div className="equip-viewer">
-          <LazyEquipment equipmentKey={activeKey} />
-          <span className="equip-badge"><ActiveIcon size={15} /> {active.label}</span>
-          <span className="equip-hint"><i /> Drag to rotate</span>
-        </div>
-        <div className="equip-info">
-          <div className="equip-kicker"><span className="live-dot" /> WHAT WE DISPATCH FOR YOU</div>
-          <h3>{active.label}</h3>
-          <p>{active.summary}</p>
-          <div className="equip-freight"><small>TYPICAL FREIGHT</small><ul>{active.freight.map((item) => <li key={item}><Check size={14} />{item}</li>)}</ul></div>
-          <div className="equip-facts"><div><small>BEST FOR</small><strong>{active.bestFor}</strong></div><div><small>COMMON LANES</small><strong>{active.lanes}</strong></div></div>
-          <a className="button button-amber" href="#contact">Get a {active.label.toLowerCase()} plan <ArrowUpRight size={16} /></a>
-        </div>
-      </div>
-      <div className="freight-fit-service-area"><span>SERVICE AREA</span><strong>U.S. carrier support</strong><i /><span>LOCAL · REGIONAL · OTR</span><b>Dallas</b><b>Atlanta</b><b>Houston</b><b>Oklahoma City</b><b>Beyond</b></div>
-    </div>
-  </section>;
+function validate(data: Record<string, string>): Errors {
+  const errors: Errors = {};
+  if (!data.name?.trim()) errors.name = "Please enter your name.";
+  if (data.phone.replace(/\D/g, "").length < 10) errors.phone = "Enter a phone number with area code.";
+  if (!/^\S+@\S+\.\S+$/.test(data.email.trim())) errors.email = "Enter a valid email address.";
+  return errors;
 }
 
 function Home() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeFaq, setActiveFaq] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
-  const [stuck, setStuck] = useState(false);
-  const progressRef = useRef<HTMLDivElement>(null);
   const [formError, setFormError] = useState("");
-  const [activeSection, setActiveSection] = useState("services");
+  const [result, setResult] = useState<null | "sent" | "email">(null);
 
   useEffect(() => {
-    const sectionIds = ["services", "scope", "coverage", "process", "reviews", "contact"];
-    const sections = sectionIds.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
-    if (!sections.length || !("IntersectionObserver" in window)) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible?.target.id) setActiveSection(visible.target.id);
-    }, { threshold: [0.15, 0.35, 0.6], rootMargin: "-18% 0px -55% 0px" });
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
-
-  // Warm the 3D code in the background once the page has settled, so it is cached before anyone scrolls to it.
-  useEffect(() => {
-    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-    if (saveData) return;
-    let timer = 0;
-    const warm = () => {
-      void import("@/components/TruckScene");
-      void import("@/components/EquipmentViewer");
-      void import("@/components/NetworkGlobe");
-    };
-    const schedule = () => {
-      timer = window.setTimeout(() => {
-        const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
-        if (idle) idle(warm, { timeout: 6000 }); else warm();
-      }, 2500);
-    };
-    if (document.readyState === "complete") schedule(); else window.addEventListener("load", schedule, { once: true });
-    return () => { window.clearTimeout(timer); window.removeEventListener("load", schedule); };
-  }, []);
-
-  // Load the contact section's background photo only when it is about to be seen.
-  useEffect(() => {
-    const el = document.getElementById("contact");
-    if (!el || !("IntersectionObserver" in window)) { el?.classList.add("is-near"); return; }
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { el.classList.add("is-near"); observer.disconnect(); }
-    }, { rootMargin: "900px 0px" });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (progressRef.current) progressRef.current.style.transform = `scaleX(${max > 0 ? Math.min(window.scrollY / max, 1) : 0})`;
-      setStuck(window.scrollY > 90);
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
-  }, []);
-
-  useEffect(() => {
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const selector = ".service-card, .scope-item, .audience-card, .testimonial-card";
-    let active: HTMLElement | null = null;
-    const reset = (el: HTMLElement | null) => { if (!el) return; el.classList.remove("is-tilting"); el.style.removeProperty("--tilt-x"); el.style.removeProperty("--tilt-y"); };
-    const onMove = (event: Event) => {
-      const e = event as globalThis.PointerEvent;
-      if (e.pointerType !== "mouse") return;
-      const el = (e.target as Element).closest<HTMLElement>(selector);
-      if (el !== active) { reset(active); active = el; }
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
-      el.classList.add("is-tilting");
-      el.style.setProperty("--tilt-x", `${(0.5 - py) * 9}deg`);
-      el.style.setProperty("--tilt-y", `${(px - 0.5) * 11}deg`);
-      el.style.setProperty("--glare-x", `${px * 100}%`);
-      el.style.setProperty("--glare-y", `${py * 100}%`);
-    };
-    const onLeave = () => { reset(active); active = null; };
-    document.addEventListener("pointermove", onMove, { passive: true });
-    document.addEventListener("pointerleave", onLeave);
-    return () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerleave", onLeave); reset(active); };
-  }, []);
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -388,11 +127,22 @@ function Home() {
     const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
     if (data.website) return; // honeypot: bots fill this, people never see it
 
+    const found = validate(data);
+    setErrors(found);
+    if (Object.keys(found).length) {
+      window.setTimeout(() => form.querySelector<HTMLElement>("[aria-invalid='true']")?.focus(), 0);
+      return;
+    }
+
     const endpoint = import.meta.env.VITE_FORM_ENDPOINT as string | undefined;
     if (!endpoint) {
-      const body = [`Name: ${data.name}`, `Company: ${data.company || "-"}`, `Phone: ${data.phone}`, `Email: ${data.email}`, `Truck type: ${data.truckType || "-"}`, `MC number: ${data.mc || "-"}`, "", data.message || ""].join("\n");
-      window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(`Dispatch request from ${data.name}`)}&body=${encodeURIComponent(body)}`;
-      setSubmitted(true);
+      // No form service configured: hand the message to the visitor's email app.
+      const body = [
+        `Name: ${data.name}`, `Company: ${data.company || "-"}`, `Phone: ${data.phone}`, `Email: ${data.email}`,
+        `MC/DOT number: ${data.mc || "-"}`, `Equipment: ${data.truckType || "-"}`, "", data.message || "",
+      ].join("\n");
+      window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(`Dispatch inquiry from ${data.name}`)}&body=${encodeURIComponent(body)}`;
+      setResult("email");
       return;
     }
 
@@ -402,213 +152,329 @@ function Home() {
       const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ ...data, source: SITE_URL }) });
       if (!response.ok) throw new Error(String(response.status));
       form.reset();
-      setSubmitted(true);
+      setResult("sent");
     } catch {
-      setFormError(`Something went wrong sending your request. Please call ${PHONE} or email ${EMAIL}.`);
+      setFormError(`We couldn't send your inquiry. Please call ${PHONE} or email ${EMAIL}.`);
     } finally {
       setSending(false);
     }
   };
 
-  const closeMenu = () => setMobileOpen(false);
+  const fieldProps = (name: Field) => ({
+    "aria-invalid": errors[name] ? (true as const) : undefined,
+    "aria-describedby": errors[name] ? `${name}-error` : undefined,
+  });
 
   return (
-    <div className="site-shell" id="top">
-      <div className="top-strip">
-        <div className="top-strip-inner">
-          <span className="live-dot" />
-          <span>DISPATCH DESK ONLINE</span>
-          <span className="strip-divider" />
-          <span>24/7 CARRIER SUPPORT</span>
-          <a href={`tel:${PHONE_DIGITS}`} className="strip-phone">{PHONE} <ArrowUpRight size={13} /></a>
+    <div className="site" id="top">
+      <div className="topbar">
+        <div className="wrap topbar-inner">
+          <span>24/7 dispatch communication</span>
+          <span className="topbar-links">
+            <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>
+            <a href={`mailto:${EMAIL}`} className="topbar-email">{EMAIL}</a>
+          </span>
         </div>
       </div>
 
-      <div className="scroll-progress" aria-hidden="true"><div ref={progressRef} /></div>
-
-      <header className={`site-nav ${mobileOpen ? "nav-open" : ""} ${stuck ? "nav-stuck" : ""}`}>
-        <div className="nav-inner">
+      <header className="header">
+        <div className="wrap header-inner">
           <BrandMark />
-          <nav className="desktop-nav" aria-label="Primary navigation">
-            <a className={activeSection === "services" ? "nav-active" : ""} href="#services">What we dispatch</a>
-            <a className={activeSection === "scope" ? "nav-active" : ""} href="#scope">What we handle</a>
-            <a className={activeSection === "coverage" ? "nav-active" : ""} href="#coverage">Coverage</a>
-            <a className={activeSection === "process" ? "nav-active" : ""} href="#process">How it works</a>
-            <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews">Reviews</a>
+          <nav className="nav" aria-label="Primary">
+            {NAV.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
           </nav>
-          <div className="nav-actions">
-            <a className="nav-call" href={`tel:${PHONE_DIGITS}`}><Phone size={15} /> <span>Call dispatch</span></a>
-            <a className="button button-small button-amber" href="#contact">Get started <ArrowUpRight size={15} /></a>
-            <button className="mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? "Close navigation" : "Open navigation"}>
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-          </div>
-        </div>
-        <div className="mobile-nav" aria-hidden={!mobileOpen}>
-          <a className={activeSection === "services" ? "nav-active" : ""} href="#services" onClick={closeMenu}>What we dispatch <ArrowRight size={16} /></a>
-          <a className={activeSection === "scope" ? "nav-active" : ""} href="#scope" onClick={closeMenu}>What we handle <ArrowRight size={16} /></a>
-          <a className={activeSection === "coverage" ? "nav-active" : ""} href="#coverage" onClick={closeMenu}>Coverage <ArrowRight size={16} /></a>
-          <a className={activeSection === "process" ? "nav-active" : ""} href="#process" onClick={closeMenu}>How it works <ArrowRight size={16} /></a>
-          <a className={activeSection === "reviews" ? "nav-active" : ""} href="#reviews" onClick={closeMenu}>Reviews <ArrowRight size={16} /></a>
-          <a className="button button-amber" href="#contact" onClick={closeMenu}>Talk to a dispatcher <ArrowUpRight size={16} /></a>
+          <a className="btn btn-red btn-sm header-cta" href="#contact">Get Started</a>
+          <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu" aria-expanded={menuOpen} aria-controls="mobile-menu">
+            <Menu size={24} />
+          </button>
         </div>
       </header>
 
+      <div id="mobile-menu" className={`drawer ${menuOpen ? "is-open" : ""}`} aria-hidden={!menuOpen} role="dialog" aria-label="Menu">
+        <div className="drawer-head">
+          <BrandMark />
+          <button className="menu-btn" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X size={24} /></button>
+        </div>
+        <nav aria-label="Mobile">
+          {NAV.map((item) => <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>{item.label}<ArrowRight size={18} /></a>)}
+        </nav>
+        <div className="drawer-foot">
+          <a className="btn btn-red btn-block" href="#contact" onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>Get Started</a>
+          <a className="btn btn-outline btn-block" href={`tel:${PHONE_DIGITS}`} tabIndex={menuOpen ? 0 : -1}><Phone size={17} /> {PHONE}</a>
+        </div>
+      </div>
+
       <main>
-        <section className="hero-section">
-          <div className="hero-glow hero-glow-one" />
-          <div className="hero-glow hero-glow-two" />
-          <div className="hero-grid-texture" />
-          <div className="container hero-content">
+        {/* HERO */}
+        <section className="hero">
+          <div className="wrap hero-grid">
             <div className="hero-copy">
-              <div className="eyebrow"><span className="eyebrow-line" /> CARRIER-FIRST DISPATCHING <span className="eyebrow-index">/ 01</span></div>
-              <h1>More miles.<br /><em>Less mayhem.</em></h1>
-              <p className="hero-lede">The dispatch desk built for owners who want their truck moving — and their business under control.</p>
+              <p className="eyebrow">Freight dispatch for U.S. carriers</p>
+              <h1><span>Your Trucks.</span> <span>Your Business.</span> <em>Our Dispatch Support.</em></h1>
+              <p className="lede">Finding the right loads takes time. We help carriers navigate the freight market, negotiate with brokers, and coordinate their loads so they can focus on keeping their trucks moving.</p>
               <div className="hero-actions">
-                <a className="button button-amber button-large" href="#contact">Put my truck to work <ArrowUpRight size={18} /></a>
-                <a className="text-link" href={`tel:${PHONE_DIGITS}`}><span className="play-icon"><Phone size={14} /></span> Talk to a dispatcher</a>
+                <a className="btn btn-red" href="#contact">Let's Get Started <ArrowRight size={17} /></a>
+                <a className="btn btn-outline" href="#services">Explore Our Services</a>
               </div>
-              <div className="hero-proof">
-                <div><strong>Built around your run</strong><small>Real people. Real updates. 24/7.</small></div>
-              </div>
+              <ul className="hero-points" aria-label="Highlights">
+                <li>24/7 dispatch communication</li>
+                <li>No forced dispatch</li>
+                <li>Transparent pricing</li>
+              </ul>
             </div>
-
-            <div className="hero-visual" aria-hidden="true">
-              <div className="hero-scene">
-                <div className="visual-card visual-card-top"><span className="card-pulse"><Zap size={13} /></span><div><small>DISPATCH DESK</small><strong>ONLINE · 24/7</strong></div></div>
-                <div className="visual-card visual-card-bottom"><div className="route-mini"><span /><span /><span /></div><div><small>NEXT MOVE</small><strong>READY TO ROLL</strong></div><ArrowUpRight size={16} /></div>
-              </div>
-            </div>
-          </div>
-          <div className="hero-bottom-line container"><span>TX</span><i /><span>GA</span><i /><span>CO</span><i /><span>AZ</span><small>ROUTES THAT MOVE WITH YOU</small></div>
-        </section>
-
-        <section className="signal-band" aria-label="Dispatch services summary">
-          <div className="signal-track">
-            {['LOAD SOURCING', 'RATE NEGOTIATION', 'BROKER COMMS', 'PAPERWORK', 'ROUTE PLANNING', 'LOAD SOURCING', 'RATE NEGOTIATION', 'BROKER COMMS'].map((item, index) => <span key={`${item}-${index}`}>{item}<b>✦</b></span>)}
+            <figure className="hero-photo">
+              <img src={PHOTOS.hero.src} srcSet={PHOTOS.hero.srcSet} sizes="(min-width: 960px) 46vw, 100vw" width={PHOTOS.hero.width} height={PHOTOS.hero.height} alt={PHOTOS.hero.alt} fetchPriority="high" decoding="async" />
+              <figcaption>Box trucks, cargo vans, dry vans, refrigerated trucks, flatbeds and hotshots.</figcaption>
+            </figure>
           </div>
         </section>
 
-        <section className="stats-strip" aria-label="American Logistics at a glance">
-          <div className="container stats-grid">
-            {stats.map((stat) => <div className="stat" key={stat.label}><strong>{stat.value}</strong><span>{stat.label}</span></div>)}
+        {/* INTRODUCTION */}
+        <section className="section section-white" aria-labelledby="intro-title">
+          <div className="wrap intro-grid">
+            <div>
+              <p className="eyebrow">What we do</p>
+              <h2 id="intro-title">Dispatch for carriers who’d rather run freight than chase it.</h2>
+            </div>
+            <div className="intro-body">
+              <p>American Logistics is a dispatching service for owner-operators, small fleets and motor carriers working in the United States. You tell us what you run and where you want to go. We find the loads, negotiate the rate with the broker and book the freight you approve.</p>
+              <dl className="intro-facts">
+                <div><dt>Who we help</dt><dd>Owner-operators, small trucking companies and motor carriers</dd></div>
+                <div><dt>What we handle</dt><dd>Load search, rates, broker calls, booking and dispatch paperwork</dd></div>
+                <div><dt>How it works</dt><dd>You approve every load. We stay in touch until it's delivered.</dd></div>
+              </dl>
+            </div>
           </div>
         </section>
 
-        <section className="section section-light" id="services">
-          <div className="container">
-            <div className="section-heading split-heading">
-              <div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> THE RIGHT FREIGHT, ON YOUR TERMS</div><h2>Whatever you haul,<br /><em>we keep it moving.</em></h2></div>
-              <div className="heading-side"><p>We pair your equipment with freight that fits your business — not someone else’s playbook.</p><a className="text-link dark-link" href="#contact">Tell us what you run <ArrowRight size={16} /></a></div>
+        {/* EQUIPMENT */}
+        <section className="section section-off" id="equipment" aria-labelledby="equip-title">
+          <div className="wrap equip-grid">
+            <div className="equip-head">
+              <p className="eyebrow">Equipment we support</p>
+              <h2 id="equip-title">If it hauls freight, we can talk about dispatching it.</h2>
+              <p className="muted">Different equipment means different freight, different rates and a different day. We learn how you run before we start looking.</p>
+              <a className="link-arrow" href="#contact">Tell us what you drive <ArrowRight size={16} /></a>
             </div>
-            <div className="service-grid">
-              {services.map((service, index) => {
-                const Icon = service.icon;
-                return <article className="service-card" key={service.title}><div className="card-topline"><span>0{index + 1}</span><Icon size={22} strokeWidth={1.5} /></div><h3>{service.title}</h3><p>{service.copy}</p><a href="#contact" aria-label={`Learn more about ${service.title}`}><ArrowUpRight size={18} /></a></article>;
+            <ol className="equip-list">
+              {EQUIPMENT.map((item, i) => (
+                <li key={item.name}>
+                  <span className="equip-num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>{item.use}</p>
+                    <p className="equip-look"><span>Typical freight</span>{item.look}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* SERVICES */}
+        <section className="section section-white" id="services" aria-labelledby="services-title">
+          <div className="wrap">
+            <div className="section-head">
+              <p className="eyebrow">Our dispatch services</p>
+              <h2 id="services-title">The work between “I need a load” and “I got paid.”</h2>
+            </div>
+            <div className="services-grid">
+              {SERVICES.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <article key={s.title}>
+                    <Icon size={26} strokeWidth={1.6} aria-hidden="true" />
+                    <h3>{s.title}</h3>
+                    <p>{s.copy}</p>
+                  </article>
+                );
               })}
             </div>
           </div>
         </section>
 
-        <section className="truck-section" id="rolling" aria-label="Interactive 3D truck">
-          <LazyTruck />
-          <div className="container truck-overlay">
-            <ScrollReveal className="truck-copy">
-              <div className="eyebrow"><span className="eyebrow-line" /> ALWAYS ROLLING</div>
-              <h2>Momentum is<br /><em>the whole game.</em></h2>
-              <p>Every idle hour costs you money. We keep the next load lined up so your wheels keep turning. Scroll to hit the gas, or switch the camera angle.</p>
-              <a className="button button-amber" href="#contact">Keep my truck rolling <ArrowUpRight size={16} /></a>
-            </ScrollReveal>
+        {/* WHY */}
+        <section className="section section-navy" id="why" aria-labelledby="why-title">
+          <div className="wrap why-grid">
+            <div className="why-head">
+              <p className="eyebrow eyebrow-light">Why American Logistics</p>
+              <h2 id="why-title">More Than Finding Loads. We Help Keep Your Business Moving.</h2>
+              <p>We don't promise freight, revenue or profit. We promise to do the dispatching work carefully and to keep you informed while we do it.</p>
+            </div>
+            <ol className="why-list">
+              {WHY.map((w, i) => (
+                <li key={w.title}>
+                  <span aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <div><h3>{w.title}</h3><p>{w.copy}</p></div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
-        <FreightFit />
-
-        <section className="section section-sand scope-section" id="scope">
-          <div className="container">
-            <ScrollReveal className="section-heading split-heading">
-              <div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHAT WE HANDLE</div><h2>Everything between<br /><em>booked and paid.</em></h2></div>
-              <div className="heading-side"><p>One dispatch desk covering the calls, paperwork and planning that eat your day.</p><a className="text-link dark-link" href="#contact">Get started <ArrowRight size={16} /></a></div>
-            </ScrollReveal>
-            <ScrollReveal className="scope-grid" delay={80}>
-              {scope.map((item, index) => { const Icon = item.icon; return <article className="scope-item" key={item.title}><span className="scope-index">{String(index + 1).padStart(2, "0")}</span><span className="scope-icon"><Icon size={22} strokeWidth={1.6} /></span><h3>{item.title}</h3><p>{item.copy}</p><div className="scope-foot"><span className="scope-tag"><i />{scopeTags[index]}</span><ArrowUpRight className="scope-arrow" size={16} /></div></article>; })}
-            </ScrollReveal>
-            <ScrollReveal className="audience-block" delay={120}>
-              <div className="audience-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> WHO WE WORK WITH</div><h3>Built for carriers of every size.</h3></div>
-              <div className="audience-grid">
-                {audiences.map((item) => { const Icon = item.icon; return <article className="audience-card" key={item.title}><Icon size={22} strokeWidth={1.5} /><h4>{item.title}</h4><p>{item.copy}</p></article>; })}
-              </div>
-            </ScrollReveal>
-            <ScrollReveal className="scope-cta" delay={140}>
-              <div><strong>Not sure what you need?</strong><span>Tell us about your truck and we will map out the right dispatch setup.</span></div>
-              <a className="button button-dark" href="#contact">Talk to a dispatcher <ArrowUpRight size={16} /></a>
-            </ScrollReveal>
+        {/* HOW IT WORKS */}
+        <section className="section section-off" id="how" aria-labelledby="how-title">
+          <div className="wrap">
+            <div className="section-head">
+              <p className="eyebrow">How it works</p>
+              <h2 id="how-title">Four steps from first call to loaded truck.</h2>
+            </div>
+            <ol className="steps">
+              {STEPS.map((s, i) => {
+                const Icon = s.icon;
+                return (
+                  <li key={s.title}>
+                    <div className="step-mark"><Icon size={22} strokeWidth={1.7} aria-hidden="true" /></div>
+                    <span className="step-label">Step {i + 1}</span>
+                    <h3>{s.title}</h3>
+                    <p>{s.copy}</p>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
         </section>
 
-        <section className="section section-navy coverage-section" id="coverage">
-          <div className="advantage-grid-texture" />
-          <div className="container coverage-layout">
-            <ScrollReveal className="coverage-copy">
-              <div className="eyebrow"><span className="eyebrow-line" /> COAST-TO-COAST LANES</div>
-              <h2>Freight that follows<br /><em>your map.</em></h2>
-              <p>From Texas to the Southeast, the Southwest to the Midwest, we build around the lanes you actually want to run — and keep the next load lined up before the current one ends.</p>
-              <ul className="coverage-list">
-                {["Dallas", "Houston", "Atlanta", "Chicago", "Phoenix", "Denver", "Los Angeles", "New York"].map((city) => <li key={city}><i />{city}</li>)}
+        {/* ABOUT */}
+        <section className="section section-white" id="about" aria-labelledby="about-title">
+          <div className="wrap about-grid">
+            <figure className="about-photo">
+              <img src={PHOTOS.about.src} srcSet={PHOTOS.about.srcSet} sizes="(min-width: 960px) 40vw, 100vw" width={PHOTOS.about.width} height={PHOTOS.about.height} alt={PHOTOS.about.alt} loading="lazy" decoding="async" />
+            </figure>
+            <div className="about-copy">
+              <p className="eyebrow">About us</p>
+              <h2 id="about-title">A dispatch desk that knows how the day actually goes.</h2>
+              <p>Anyone who has run a truck knows the kind of day we mean. The broker who doesn't call back. The rate that looks fine until you count the deadhead. The receiver that holds you for three hours.</p>
+              <p>American Logistics was built around those days. We handle the phone, the negotiating and the paperwork so you can handle the driving and the business.</p>
+              <p>We'd rather tell you a load doesn't make sense than book it just to fill a slot. We'd rather answer the phone than send a text saying we'll call you back. That's the whole idea.</p>
+              <p className="about-sign">We work with trucking companies and independent owner-operators across the United States.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA */}
+        <section className="cta" aria-labelledby="cta-title">
+          <div className="wrap cta-inner">
+            <div>
+              <h2 id="cta-title">Ready to Put Your Truck to Work?</h2>
+              <p>Let's talk about your equipment, your lanes, and the kind of freight you're looking for. Our team is ready to hear from you.</p>
+            </div>
+            <a className="btn btn-red btn-lg" href="#contact">Talk to Our Team <ArrowRight size={18} /></a>
+          </div>
+        </section>
+
+        {/* CONTACT */}
+        <section className="section section-off" id="contact" aria-labelledby="contact-title">
+          <div className="wrap contact-grid">
+            <div className="contact-info">
+              <p className="eyebrow">Contact</p>
+              <h2 id="contact-title">Tell us about your truck.</h2>
+              <p className="muted">Send the form, or call us. Either way, you'll get a real person and a clear next step, not a sales script.</p>
+              <ul className="contact-list">
+                <li><Phone size={20} aria-hidden="true" /><div><small>Call</small><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a></div></li>
+                <li><Mail size={20} aria-hidden="true" /><div><small>Email</small><a href={`mailto:${EMAIL}`}>{EMAIL}</a></div></li>
+                <li><Clock3 size={20} aria-hidden="true" /><div><small>Dispatch communication</small><span>24/7</span></div></li>
               </ul>
-              <a className="button button-amber" href="#contact">Plan my lanes <ArrowUpRight size={16} /></a>
-            </ScrollReveal>
-            <ScrollReveal className="coverage-visual" delay={120}>
-              <LazyGlobe />
-              <div className="globe-hint"><span /> Drag to explore the network</div>
-            </ScrollReveal>
-          </div>
-        </section>
+              <div className="need">
+                <h3>To get you started, we usually ask for</h3>
+                <ul>
+                  <li>MC and DOT numbers</li>
+                  <li>Certificate of insurance</li>
+                  <li>W-9</li>
+                  <li>Your equipment details and preferred lanes</li>
+                </ul>
+                <p>You don't need all of this to reach out. We'll walk you through it.</p>
+              </div>
+            </div>
 
-        <section className="section section-light process-section" id="process">
-          <div className="container">
-            <ScrollReveal className="section-heading center-heading"><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> SIMPLE BY DESIGN</div><h2>Your next move,<br /><em>handled.</em></h2><p>One clear partner from the first call to the final proof of delivery.</p></ScrollReveal>
-            <ScrollReveal className="process-grid" delay={80}>
-              {steps.map((step) => { const Icon = step.icon; return <article className="process-step" key={step.number}><span className="step-ghost" aria-hidden="true">{step.number}</span><div className="step-node"><Icon size={20} strokeWidth={1.7} /></div><div className="step-number">STEP {step.number}</div><h3>{step.title}</h3><p>{step.copy}</p><span className="step-tag"><Check size={12} strokeWidth={2.4} />{step.tag}</span></article>; })}
-            </ScrollReveal>
-            <ScrollReveal className="process-callout" delay={160}><div className="callout-mark"><CircleCheck size={22} /></div><p><strong>Good dispatch feels quiet.</strong> You get clear options, fast answers, and the confidence to keep rolling.</p><a className="button button-dark" href="#contact">Build my dispatch plan <ArrowUpRight size={16} /></a></ScrollReveal>
-          </div>
-        </section>
-
-        <section className="section section-light reviews-section" id="reviews">
-          <div className="container">
-            <ScrollReveal className="reviews-header"><div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> FROM THE DRIVER'S SEAT</div><h2>Good words from<br /><em>good operators.</em></h2></div><div className="rating-lockup"><div className="stars"><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /><Star size={15} fill="currentColor" /></div><strong>Built on communication</strong><small>Carrier relationships that go the distance.</small></div></ScrollReveal>
-            <ScrollReveal className="testimonial-grid" delay={80}>{testimonials.map((testimonial) => <article className="testimonial-card" key={testimonial.name}><Quote className="quote-mark" size={27} /><p>“{testimonial.quote}”</p><div className="testimonial-meta"><span>{testimonial.name.split(" ").map((part) => part[0]).join("")}</span><div><strong>{testimonial.name}</strong><small>{testimonial.meta}</small></div></div></article>)}</ScrollReveal>
-          </div>
-        </section>
-
-        <section className="section section-navy faq-section">
-          <div className="container faq-layout">
-            <ScrollReveal className="faq-copy"><div className="eyebrow"><span className="eyebrow-line" /> NO SMALL PRINT ENERGY</div><h2>Questions before<br /><em>you roll?</em></h2><p className="faq-intro">No pressure, no runaround. Here are a few things carriers usually ask first.</p><a className="button button-amber" href={`mailto:${EMAIL}`}>Email the desk <Mail size={16} /></a></ScrollReveal>
-            <ScrollReveal className="faq-list" delay={100}>{faqs.map((faq, index) => <div className={`faq-item ${activeFaq === index ? "faq-active" : ""}`} key={faq.question}><button onClick={() => setActiveFaq(activeFaq === index ? -1 : index)} aria-expanded={activeFaq === index}><span>{faq.question}</span><ChevronDown size={18} /></button>{activeFaq === index && <p>{faq.answer}</p>}</div>)}</ScrollReveal>
-          </div>
-        </section>
-
-        <section className="section contact-section" id="contact">
-          <div className="container contact-layout">
-            <ScrollReveal className="contact-copy"><div className="eyebrow"><span className="eyebrow-line" /> READY WHEN YOU ARE</div><h2>Put your truck<br /><em>in motion.</em></h2><p>Tell us a little about your operation. We will come back with a clear next step — not a hard sell.</p><div className="contact-details"><a href={`tel:${PHONE_DIGITS}`}><span><Phone size={17} /></span><div><small>CALL THE DISPATCH DESK</small><strong>{PHONE}</strong></div></a><a href={`mailto:${EMAIL}`}><span><Mail size={17} /></span><div><small>EMAIL THE TEAM</small><strong>{EMAIL}</strong></div></a><div className="contact-hours"><span><Clock3 size={17} /></span><div><small>DISPATCH DESK</small><strong>Open 24/7</strong></div></div></div><div className="contact-next"><small>WHAT HAPPENS NEXT</small><ol><li><b>01</b><span>We review your request and reach out.</span></li><li><b>02</b><span>A short call to learn your truck, lanes and goals.</span></li><li><b>03</b><span>We start lining up freight that fits.</span></li></ol></div></ScrollReveal>
-            <ScrollReveal className="lead-form-wrap" delay={120}>{submitted ? <div className="form-success"><div className="success-icon"><CircleCheck size={30} /></div><div className="eyebrow eyebrow-dark"><span className="eyebrow-line" /> REQUEST RECEIVED</div><h3>You're on the radar.</h3><p>Thanks for reaching out. An American Logistics team member will connect with you soon. If you need us now, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</p><button className="button button-dark" onClick={() => setSubmitted(false)}>Send another request <ArrowRight size={16} /></button></div> : <form className="lead-form" onSubmit={handleSubmit}><div className="form-heading"><span>01</span><div><small>START A CONVERSATION</small><h3>Let's talk trucks.</h3></div></div><div className="form-row"><label>Full name<input required name="name" placeholder="Your name" /></label><label>Company<input name="company" placeholder="Company name" /></label></div><div className="form-row"><label>Phone<input required type="tel" name="phone" placeholder="(000) 000-0000" /></label><label>Email<input required type="email" name="email" placeholder="you@company.com" /></label></div><div className="form-row"><label>Truck type<select name="truckType" defaultValue=""><option value="" disabled>Select equipment</option><option>Box truck</option><option>Dry van</option><option>Reefer</option><option>Flatbed</option><option>Hotshot</option><option>Other</option></select></label><label>MC number<input name="mc" placeholder="Optional" /></label></div><label>What are you looking for?<textarea name="message" placeholder="Tell us about your lanes, home time, or what is not working today..." rows={3} /></label><input className="hp-field" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />{formError && <p className="form-error" role="alert">{formError}</p>}<button className="button button-amber button-submit" type="submit" disabled={sending}>{sending ? "Sending…" : "Get my dispatch options"} <ArrowUpRight size={17} /></button><small className="form-note">By submitting, you are asking American Logistics to contact you about dispatch support.</small></form>}</ScrollReveal>
+            <div className="form-card">
+              {result ? (
+                <div className="form-done" role="status">
+                  <h3>{result === "sent" ? "Thanks. We've got your inquiry." : "Almost there."}</h3>
+                  <p>
+                    {result === "sent"
+                      ? <>Someone from our team will contact you. If it's urgent, call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</>
+                      : <>Your email app should have opened with your message ready to send. If it didn't, email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> or call <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>.</>}
+                  </p>
+                  <button className="btn btn-outline" onClick={() => setResult(null)}>Back to the form</button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} noValidate>
+                  <h3>Request dispatch support</h3>
+                  <div className="row">
+                    <label><span>Full name <b className="req" aria-hidden="true">*</b></span>
+                      <input name="name" autoComplete="name" {...fieldProps("name")} />
+                      {errors.name && <small className="err" id="name-error">{errors.name}</small>}
+                    </label>
+                    <label><span>Company name</span>
+                      <input name="company" autoComplete="organization" />
+                    </label>
+                  </div>
+                  <div className="row">
+                    <label><span>Phone number <b className="req" aria-hidden="true">*</b></span>
+                      <input name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 555-5555" {...fieldProps("phone")} />
+                      {errors.phone && <small className="err" id="phone-error">{errors.phone}</small>}
+                    </label>
+                    <label><span>Email address <b className="req" aria-hidden="true">*</b></span>
+                      <input name="email" type="email" inputMode="email" autoComplete="email" {...fieldProps("email")} />
+                      {errors.email && <small className="err" id="email-error">{errors.email}</small>}
+                    </label>
+                  </div>
+                  <div className="row">
+                    <label><span>MC/DOT number</span>
+                      <input name="mc" placeholder="Optional" />
+                    </label>
+                    <label><span>Equipment type</span>
+                      <select name="truckType" defaultValue="">
+                        <option value="">Select equipment</option>
+                        {EQUIPMENT_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <label><span>Message</span>
+                    <textarea name="message" rows={4} placeholder="Your lanes, home time, or what you want from a dispatcher." />
+                  </label>
+                  <input className="hp" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+                  {formError && <p className="form-error" role="alert">{formError}</p>}
+                  <button className="btn btn-red btn-block" type="submit" disabled={sending}>{sending ? "Sending…" : "Send Inquiry"}{!sending && <ArrowRight size={17} />}</button>
+                  <p className="privacy"><strong>Privacy.</strong> We use the details you send only to respond to your inquiry about dispatch support. Fields marked * are required.</p>
+                </form>
+              )}
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="site-footer">
-        <div className="container footer-top">
-          <div className="footer-brand"><BrandMark /><p>Freight dispatching for owner-operators and small fleets who want a clearer road ahead.</p></div>
-          <div className="footer-col"><h4>Explore</h4><a href="#services">Services</a><a href="#scope">What we handle</a><a href="#coverage">Coverage</a><a href="#process">How it works</a><a href="#reviews">Reviews</a></div>
-          <div className="footer-col"><h4>Contact</h4><a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a><a href={`mailto:${EMAIL}`}>{EMAIL}</a></div>
+      <footer className="footer">
+        <div className="wrap footer-grid">
+          <div className="footer-brand">
+            <BrandMark light />
+            <p>Freight dispatching and carrier support for trucking companies and owner-operators in the United States.</p>
+          </div>
+          <nav aria-label="Footer">
+            <h4>Company</h4>
+            {NAV.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
+          </nav>
+          <div>
+            <h4>Services</h4>
+            {SERVICES.map((s) => <a key={s.title} href="#services">{s.title}</a>)}
+          </div>
+          <div>
+            <h4>Contact</h4>
+            <a href={`tel:${PHONE_DIGITS}`}>{PHONE}</a>
+            <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+            <span>24/7 dispatch communication</span>
+          </div>
         </div>
-        <div className="container footer-bottom"><span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span><span>U.S. carrier support · Built to keep you moving</span><a href="#top">Back to top <ArrowUpRight size={13} /></a></div>
+        <div className="wrap footer-bottom">
+          <span>© {new Date().getFullYear()} American Logistics. All rights reserved.</span>
+          <a href="#top">Back to top</a>
+        </div>
       </footer>
 
-      <div className="mobile-cta" role="region" aria-label="Quick contact">
-        <a className="mobile-cta-call" href={`tel:${PHONE_DIGITS}`}><Phone size={17} /> Call now</a>
-        <a className="mobile-cta-quote" href="#contact">Get started <ArrowUpRight size={16} /></a>
+      <div className="mobile-bar" role="region" aria-label="Quick contact">
+        <a href={`tel:${PHONE_DIGITS}`} className="mb-call"><Phone size={18} /> Call Now</a>
+        <a href="#contact" className="mb-quote">Get Started</a>
       </div>
     </div>
   );
